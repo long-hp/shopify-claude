@@ -1,5 +1,6 @@
 ---
 name: extract-icon
+argument-hint: "[--alias lucide=name ...]"
 description: Use when the user wants to refresh / sync / extract Lucide SVG content into the project's icon snippets at `src/snippets/icons/`. Trigger phrases include "update icons from lucide", "sync icons", "refresh icon snippets", "extract design lucide icons", "lucide → snippet", or any mention that `data-lucide="..."` references in `design/` HTML/MD have drifted from `src/snippets/icons/icon-*.liquid`. The skill scans `design/` for `data-lucide` values, fetches the current SVG from Lucide's CDN (`unpkg.com/lucide-static@latest`), transforms the outer attributes to the project's template format (`{{ size }}` / `{{ color }}` / `{{ class }}`), and rewrites the matching snippet's `<svg>…</svg>` block in-place. The `icon.liquid` dispatcher is NEVER touched — when a lucide name diverges from the project's snippet name (e.g., lucide `x` ↔ project `close`), the agent invoking the script proposes aliases via `--alias lucide=suffix` CLI flags based on semantic equivalence, no static config file. Use this skill instead of hand-editing SVG content in any `icon-*.liquid`.
 ---
 
