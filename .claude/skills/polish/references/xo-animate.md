@@ -14,11 +14,15 @@ For most polish proposals, recommend the **auto-stagger** form. It inherits the 
 </xo-animate>
 ```
 
-Put `xo-cascade` on each sibling in a group (heading, then subheading, then a row of cards) and they reveal in sequence automatically. This is the "ăn theo global settings" mode the project wants by default — prefer it unless the design calls for a specific effect.
+Put `xo-cascade` on each sibling in a group (heading, then subheading, then a row of cards) and they reveal in sequence automatically. This is the "ăn theo global settings" mode the project wants by default.
 
-## Manual mode (only when a specific effect is needed)
+**This bare `<xo-animate xo-cascade>` — with no other attributes — is the only animation form polish writes unprompted.** It inherits the global motion settings so every reveal in the theme stays consistent. Don't add `xo-type`/`xo-duration`/`xo-easing`/`xo-constant` alongside it on your own reading of the design; choosing a bespoke effect is the user's call, not yours (see Manual mode below).
 
-When the design clearly wants a particular motion (e.g. a horizontal slide-in, a zoom, a gooey reveal), set attributes explicitly:
+## Manual mode (only when the user explicitly asks)
+
+Polish never reaches for these attributes on its own. Use this mode **only when the user has explicitly asked for a specific effect or described the motion they want** — e.g. "make the cards zoom in", "I want the hero to slide in from the left", "give this a gooey reveal". The trigger is the user's request, not your reading of the design.
+
+When that happens, pull the exact `xo-type`/`xo-easing` value from the xo-components MCP (`mcp__xo-components__get_component` name `xo-animate`) and set attributes explicitly. The table below is the reference for *that* moment — not part of the default proposal:
 
 | Attribute | Default | Use |
 | --- | --- | --- |
