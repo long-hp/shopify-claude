@@ -41,7 +41,7 @@ The `.claude/` agent sits in the middle: it reads the design, writes Liquid, val
 | `liquid-doc` | `{% comment %} @param … %}` doc blocks | Top of a snippet file |
 | `git` | Scoped commits, no push, no amend | User types `/git` |
 | `extract-icon` | Sync Lucide SVGs into `src/snippets/icons/icon-*.liquid` | "update icons", "sync icons", "lucide → snippet" |
-| `system-audit` | Health-check the `.claude/` system + Shopify-platform drift | `/system-audit`, "check .claude", "audit the system" |
+| `system-upgrade` | Check, evaluate + **upgrade** the `.claude/` system (skill changes delegated to `skill-creator`) | `/system-upgrade`, `/system-audit`, "check .claude", "nâng cấp hệ thống" |
 
 ### Script tooling
 

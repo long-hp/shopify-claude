@@ -114,6 +114,7 @@ Why: PROGRESS is the next-agent's read-on-start orientation for "where are we in
 | **`design-to-liquid`** | HOW to port a section. Entry: check `xo-design` MCP picker for the section the user pointed at (`mcp__xo-design__get_selection`); fall through to manual survey if no selection. Then Step 0 (tokens) → Step 1 (survey) → Step 2 (variant audit) → … → Step 6 (restyle). Use during actual porting work. Suggests `/polish` at completion. |
 | `design-sync`          | `/design-sync` — bridge for when the `design/` repo (separate git clone, versioned via `design/package.json`) is pulled forward. Diffs current design HEAD vs the last synced baseline in `.agent-state/DESIGN-SYNC.md`, buckets changes by severity, resolves which already-ported units need re-sync vs net-new backlog, proposes batches handed off to `design-to-liquid`. Advances the baseline ledger only on user confirmation. |
 | `polish`               | `/polish <target>` — finishing-pass QA after a section/snippet/page/theme is ported. Audits 3 dimensions (a11y · `xo-animate` scroll-reveal · `xo-hover` interaction), proposes a grouped checklist with exact markup, applies only user-selected items. Standalone OR via design-to-liquid's completion handoff. Bundles `scan-target.py` detector. |
+| `editor-qa`            | `/editor-qa <target>` — **live**-editor QA pass. Drives the real Shopify Theme Editor (merchant's logged-in session, via Playwright **extension-mode** MCP) to exercise a just-ported section/block: add section, add blocks, set fields, scroll, toggle **desktop↔mobile** (`⌘⌃M`) for responsive, screenshot both vs `design/`. Never Saves without asking. Requires the Playwright Extension connected to a logged-in editor tab (`references/setup.md`). Standalone OR via design-to-liquid's completion handoff. Bundles `grep-refs.py`. |
 | **`snippet`**          | Authoring the `.liquid` body of a snippet — pure / schema (context) / variant (dispatcher + numbered) shapes, the `{% liquid %}` prelude conventions, conditional wrappers, complex class composition, nested render. |
 | **`liquid`**           | Liquid language reference — tags, filters, objects/drops, blocks, project idioms, gotchas. Self-contained; material distilled from shopify.dev/docs/api/liquid via context7. |
 | `schema`               | Authoring section/block/global schemas via `createSectionSchema` / `createGlobalSchema` / `createSchemaSettings`. |
@@ -122,7 +123,7 @@ Why: PROGRESS is the next-agent's read-on-start orientation for "where are we in
 | `liquid-doc`           | Liquid doc-comment `{% comment %} @param … %}` format at the top of every snippet.                  |
 | **`git`**              | `/git` — scoped commit workflow. Scans dirty files, groups by scope (skill / section / snippet / config / state / root), drafts Conventional-Commit message, light pre-commit gates, commits ONE scope per invocation after preview. Never pushes or amends. |
 | `extract-icon`         | Sync Lucide SVG content into `src/snippets/icons/icon-*.liquid` from `unpkg.com/lucide-static@latest`. Triggered by "update icons", "sync icons", "lucide → snippet". |
-| `system-audit`         | Health-check `.claude/` system + Shopify-platform drift. Scored report + proposed patches. Triggered by `/system-audit`, "audit the system", "check .claude", "score the system". |
+| `system-upgrade`       | Check, evaluate + **upgrade** the `.claude/` system (skills, AGENT.md, hooks, MCP, validators) + Shopify-platform drift. Distribution-repo aware. **Skill-targeted changes are delegated to `skill-creator`.** Triggered by `/system-upgrade`, `/system-audit`, "kiểm tra hệ thống", "nâng cấp hệ thống", "check .claude". |
 
 ## Validators (run after every schema or preset edit)
 
@@ -287,3 +288,4 @@ Append one entry to `.agent-state/PROGRESS.md` at the TOP of the file (under the
 | Skills | `.claude/skills/*/` |
 | MCP servers | `.mcp.json` (xo-components, playwright, xo-design) |
 | xo-design (design preview + picker) | `design/xo-design/` (portable bundle) — `cd design && npm run xo-design` to start (`npm run xo-design:stop` to stop). Exposes the picker MCP at the URL listed in `.mcp.json#xo-design`. |
+| Editor QA target | `.editor` (repo root) — single-line editor URL the `editor-qa` skill navigates to when no editor tab is already connected. |

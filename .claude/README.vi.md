@@ -41,7 +41,7 @@ Agent `.claude/` đứng giữa: đọc design, viết Liquid, validate schema, 
 | `liquid-doc` | `{% comment %} @param … %}` doc block | Header file snippet |
 | `git` | Commit theo scope, không push, không amend | User gõ `/git` |
 | `extract-icon` | Sync SVG Lucide vào `src/snippets/icons/icon-*.liquid` | "update icons", "sync icons", "lucide → snippet" |
-| `system-audit` | Health-check hệ `.claude/` + drift nền tảng Shopify | `/system-audit`, "check .claude", "audit hệ thống" |
+| `system-upgrade` | Check, đánh giá + **nâng cấp** hệ `.claude/` (việc động tới skill delegate cho `skill-creator`) | `/system-upgrade`, `/system-audit`, "kiểm tra hệ thống", "nâng cấp hệ thống" |
 
 ### Script tooling
 
