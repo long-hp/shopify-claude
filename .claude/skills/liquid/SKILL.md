@@ -38,6 +38,7 @@ Project's Liquid reference — syntax, semantics, project idioms. Self-contained
 | "Why does my `for product in collection.products` cut off at 50?" | `references/gotchas.md` — for-loop ceiling, use paginate |
 | "How do I make a boolean setting default to `false` survive the `\| default:` filter?" | `references/idioms.md` — `default | allow_false: true` |
 | "Which image width should I pass to `image_url`?" | `references/idioms.md` — responsive image sizing |
+| "Should this `.liquid` string be `\| t`, a schema setting, or hardcoded? Where do I add the key?" | `references/translations.md` — decision + `src/locales/NN-<ns>.json` convention |
 
 ## Navigation
 
@@ -47,6 +48,7 @@ Project's Liquid reference — syntax, semantics, project idioms. Self-contained
 - **`references/blocks.md`** — section blocks deep-dive. Inline block vs theme block · three render patterns (manual `for`, `content_for 'blocks'`, `content_for 'block'` static) · `if/elsif` vs `case/when` dispatch · `limit` / `max_blocks` / 50-ceiling · **preset defaults** (block arrays + nested theme blocks). **Read before any section that has a `blocks` array.**
 - **`references/idioms.md`** — project-specific patterns. **Read this before adding new sections or snippets.** Includes the canonical `{%- capture content -%} {% render 'section', content: content %}` wrapper, the `{% liquid %}` prelude convention, `default | allow_false` for booleans, image responsive sizing recipe.
 - **`references/gotchas.md`** — common pitfalls. Read when something works in isolation but breaks in the editor / preview.
+- **`references/translations.md`** — the `| t` filter + this project's `src/locales/NN-<namespace>.json` source convention. **Read before hardcoding any visible string in a `.liquid` body** — decides `| t` vs schema setting vs hardcode, key reuse/add procedure, `_html` no-escape, pluralization. (Markup strings only — schema labels/defaults are out of scope.)
 
 ## Project Liquid conventions (cheatsheet)
 
@@ -113,6 +115,17 @@ The `image` snippet (`src/snippets/_base/image/image.liquid`) handles `image_url
 ### 6. Render isolation
 
 `{% render 'X', param: value %}` is **isolated** from the calling scope. The snippet sees only the params you pass + global objects (`section`, `block`, `settings`, `cart`, `request`, etc.). It does NOT see local variables from the caller. This is intentional — keeps snippets reusable. See `references/gotchas.md`.
+
+### 7. Translatable strings — `| t`, keyed in `src/locales/`
+
+Theme-owned visible strings in `.liquid` markup (button/UI labels, a11y `aria-label`/`visually-hidden`, status/error/empty messages) go through `'<namespace>.<path>' | t`, with the key authored in `src/locales/NN-<namespace>.json` (NOT the compiled `shopify/locales/...`). Merchant-edited content is a schema setting instead; schema labels/defaults are never `| t`.
+
+```liquid
+<button>{{ 'general.cart.add_to_cart' | t }}</button>
+<button aria-label="{{ 'products.product.quick_view' | t }}">…</button>
+```
+
+**Reuse-first:** `grep -rin "<text>" src/locales/` before adding a key. Full decision + add-a-key procedure + `_html` no-escape + pluralization → `references/translations.md`.
 
 ## Project layout — where `.liquid` lives
 

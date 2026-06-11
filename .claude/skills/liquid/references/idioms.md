@@ -278,14 +278,14 @@ The `liquid` setting type renders the merchant's input as Liquid. Use sparingly 
 
 ## 16. Translation keys via `t` filter
 
-Hardcoded user-facing strings should go through `'<key>' | t`. Define keys in `locales/<lang>.json`:
+Theme-owned visible strings in `.liquid` markup go through `'<namespace>.<path>' | t`. Author keys in the **source** locale files `src/locales/NN-<namespace>.json` (namespace = filename; build merges them into `shopify/locales/en.default.json`) — never the compiled file:
 
 ```liquid
 <button>{{ 'general.cart.add_to_cart' | t }}</button>
 {{ 'sections.cart.items_count' | t: count: cart.item_count }}
 ```
 
-For ported sections in this project, defaults usually live in `schema.js` (`default: 'Shop the kit'`). Translation extraction happens at submission time. See `design-to-liquid/references/theme-store-requirements.md`.
+This is for **markup strings only**. Merchant-edited content is a schema setting; schema labels/defaults are never `| t`. Full decision tree (`| t` vs setting vs hardcode), key reuse/add procedure, `_html` no-escape, pluralization → **`references/translations.md`** (source of truth for this project's locale convention).
 
 ## 17. Native vs project doc-comment
 
