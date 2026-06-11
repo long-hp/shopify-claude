@@ -12,3 +12,5 @@ npm-debug.log*
 
 # Claude Code local-only
 .claude/settings.local.json
+/design
+/src
