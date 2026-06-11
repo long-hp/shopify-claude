@@ -99,6 +99,7 @@ When applying:
 - **Invoke the authoring skill for the file you touch** — `snippet` before editing a snippet body, `scss` for focus-state / reduced-motion SCSS, `xo-css` for atomic hover/utility classes, `liquid-doc` if a snippet's params change. These exist so the edit follows project rules; don't freehand.
 - **Shared groups (`src/groups/...`)** — adding a single `aria-label` or one `xo-animate` wrapper is fine, but anything structural follows the group ladder (AGENT.md): Step D is "STOP — ask the user before non-trivial markup change". When in doubt on a group, ask.
 - **Keep changes additive and surgical** — you're adding attributes/wrappers/aria, not restyling. Don't "improve" adjacent markup (AGENT.md surgical-changes rule).
+- **A11y text is translatable — never hardcode it.** Any `aria-label` / `visually-hidden` / functional `alt` you add goes through `'<namespace>.<path>' | t`, reuse-first (`grep -rin "<text>" src/locales/` before adding a key). See `liquid/references/translations.md`. Surface "add key `X` to `src/locales/NN-<ns>.json`" as part of the proposal when a new key is needed.
 - **Reduced-motion** — if you add hand-rolled motion (not `xo-animate`), pair it with a `prefers-reduced-motion` guard in SCSS.
 
 ## Step 5 — Verify
