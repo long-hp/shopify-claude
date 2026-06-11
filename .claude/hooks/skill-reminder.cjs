@@ -105,11 +105,11 @@ function matchReminders(filePath) {
       headline: 'Editing a section body',
       rules: [
         'Section wrapper: `{%- capture content -%} … {%- endcapture -%}` then `{% render \'section\', content: content %}` (never hand-roll `<section><xo-container>…padding…</section>`).',
-        'BEFORE rendering any `{% render \'X\' %}` — run the variant audit (`design-to-liquid` Step 2). Read BOTH `design/src/components/X/` AND `src/snippets/X/`; don\'t reuse if visual archetypes differ.',
-        'Class composition follows `snippet` rule #6 (BEM root) + atomic XO-CSS where the section\'s CSS strategy (clarify Q7) allows.',
+        'STOP-GATE — variant audit. For EVERY `<xo-component>` / `{% render \'X\' %}`: if you have not this port read BOTH `design/src/components/X/` AND `src/snippets/X/` and walked the A/B/C ladder, STOP and do it now. Archetypes differ → do not reuse. Step C (new variant) or modifying a variant → invoke `Skill(snippet)` and ASK THE USER before creating. Never hand-inline a snippet to dodge the audit.',
+        'STOP-GATE — CSS strategy (clarify Q7). Q7 (SCSS-first vs XO-CSS-first) ALWAYS fires, even on a clean section. If it was NOT asked this port, STOP and ask it before writing any styling. Then: BEM root class (`snippet` rule #6) + atomic XO-CSS only where the chosen strategy allows.',
       ],
       action:
-        'Invoke `Skill(design-to-liquid)` for Step 2/3 patterns + `Skill(snippet)` for class/render conventions.',
+        'Invoke `Skill(design-to-liquid)` for Step 1.5 (Q7) + Step 2/3 patterns + `Skill(snippet)` for class/render conventions.',
     });
   }
 
