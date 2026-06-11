@@ -215,13 +215,13 @@ When the snippet (or its `*-base` ancestor) needs to apply attrs that the mercha
 
 ## Translation strings
 
-Use Shopify's `t:` filter for any user-facing copy that should be translatable:
+Theme-owned visible copy in the snippet body (labels, a11y `aria-label`/`visually-hidden`, status messages) goes through `'<namespace>.<path>' | t`:
 
 ```liquid
 {{ 'sections.subscribe.button_label' | t }}
 ```
 
-Locale files live under `src/locales/`. When adding a string, register the key in the locale JSON for at least `en.default.json`.
+Author the key in the **source** file `src/locales/NN-<namespace>.json` (namespace = filename; build merges into `shopify/locales/en.default.json`) — not the compiled file. Reuse-first: `grep -rin "<text>" src/locales/` before adding. Merchant-edited content is a schema setting, not `| t`. Full decision + add-a-key + `_html`/pluralization rules → `liquid/references/translations.md`.
 
 ## Anti-patterns recap
 
