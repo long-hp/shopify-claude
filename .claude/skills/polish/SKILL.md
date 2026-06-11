@@ -1,5 +1,6 @@
 ---
 name: polish
+argument-hint: "<target> | theme"
 description: Use as the finishing-pass QA after a section, snippet, page, or the whole theme is functionally ported — call it standalone whenever you say "polish this", "/polish", "finishing pass", "làm bóng / hoàn thiện section này", "rà a11y + animation", "check accessibility", "thêm animation cho phần này", "gợi ý hover", or accept the handoff that design-to-liquid prints when a port completes. It audits ONE explicit target (a section/snippet/page dir, or a whole-theme sweep) across three dimensions — (1) accessibility (markup-checkable — alt text, icon-button aria-label, form-label association, heading order, keyboard operability, focus-visible, reduced-motion, landmarks), (2) xo-animate scroll-reveal opportunities (default `<xo-animate xo-cascade>` auto-mode that inherits global motion settings; manual xo-type/xo-duration/xo-easing options pulled from the xo-components MCP), and (3) xo-hover interaction opportunities (the project-local xo-hover convention — parent `xo-hover` + child `xo-effect`/`xo-abs`, or atomic `property:value/xo-hover`). It produces a grouped proposal checklist with exact markup for each item, the user multi-selects which to apply, and only the selected items are written. Do NOT use it to port a design from scratch (that's design-to-liquid) or to audit the .claude/ system (that's system-audit). It edits .liquid markup, so for shared groups it follows the group override ladder (ask before deep markup changes) and invokes snippet/scss/xo-css skills when authoring the fixes.
 ---
 
@@ -62,31 +63,36 @@ Principles that cut across all three (Simplicity-first, per AGENT.md):
 
 ## Step 3 — Present the proposal checklist
 
-Group by dimension, ordered a11y → animate → hover (a11y first because it's correctness, not taste). Each item is self-contained so the user can judge it in isolation:
+Group by dimension, ordered a11y → animate → hover (a11y first because it's correctness, not taste). **Every item must be self-explanatory enough that the user never has to open the file to judge it** — symptom, human impact, exact before→after, and any risk/caveat, each tagged with severity + ripple badges.
+
+→ **`references/proposal-format.md` is the source of truth for the item template, the badges, and the choice format. Read it before presenting.** The per-item shape:
 
 ```markdown
-## ♿ A11y (N items)
-- **A1** `header.liquid:42` — icon-only cart button has no accessible name
-  - Fix: add `aria-label="{{ 'sections.cart.title' | t }}"` to the `<button>`
-  - Why: screen readers announce it as "button" otherwise
-- **A2** `hero.liquid:18` — decorative background `<img>` missing alt
-  - Fix: `alt=""` (decorative — hide from AT)
+## ♿ A11y (N) · ✨ xo-animate (N) · 🖱 xo-hover (N)
 
-## ✨ xo-animate (N items)
-- **V1** `hero.liquid:12` — heading block, no entrance animation
-  - Fix: wrap in `<xo-animate xo-cascade>…</xo-animate>` (auto-stagger, inherits global motion)
-  - Why: design reveals the headline on scroll; cascade matches sibling rhythm
-
-## 🖱 xo-hover (N items)
-- **H1** `product-card.liquid:8` — card image has a hidden "Quick add" with no reveal
-  - Fix: `xo-hover` on the card root + `xo-effect="up in fade-in"` on the CTA (see xo-hover ref)
+- **A1** `action-quick-view.liquid:15` · 🔴 Must-fix · 🔁 Shared snippet · ⚠️ Needs-confirm
+  - **Symptom:** `<xo-product-quick-view-trigger>` wraps icon-only content — no `role`/`tabindex`/`aria-label`.
+  - **Impact:** screen-reader users hear nothing; keyboard users may not be able to open quick-view.
+  - **Fix:** add `role="button" tabindex="0" aria-label="{{ 'products.product.quick_view' | t }}"` to the trigger.
+  - **Caveat:** confirm the web component doesn't wire role/keyboard at runtime before writing; if it does, drop A1.
 ```
+
+Badges (full table in `proposal-format.md`): severity 🔴 Must-fix (a11y) / 🟡 Optional (animate·hover); risk 🟢 additive-safe / 🔁 shared snippet / 🧩 group; confidence ⚠️ needs-confirm / 👁 human-eye (recommendation-only). If you can't fill **Impact** in human terms ("keyboard users can't…", not "violates 4.1.2"), the item isn't justified — drop it. Don't re-propose what the port already added (detector/read shows `xo-animate`/`xo-hover` present → skip).
 
 Always state the **default animation recommendation as `xo-cascade`** (the user's "auto theo global settings" mode). Only reach for manual `xo-type`/`xo-duration`/`xo-easing` when a specific effect is called for — and when you do, pull the exact option from the xo-components MCP (`mcp__xo-components__get_component` name `xo-animate`) rather than from memory.
 
 ## Step 4 — Let the user select, then apply only those
 
-Ask with a multi-select (e.g. `AskUserQuestion` or a free-form "which items? A1,A2,V1 / all a11y / all / none"). Apply **only** the chosen items.
+Ask with **one multi-select `AskUserQuestion` per dimension** (a11y / animate / hover), in that order — never mix dimensions in one question (severity must be uniform so the user isn't weighing "broken for blind users" against "nice fade-in" in the same list). Apply **only** the chosen items.
+
+Each question + option follows `references/proposal-format.md` exactly. The essentials:
+
+- **Question text** states target + dimension + count + "multi-select; only picks are written", and for a11y adds the steer "apply all unless you have a reason".
+- **Each option = one finding.** Label = `<ID> — <plain short symptom>` (name the user-facing problem, not the attribute). Description carries four compact facets: **Changes** (`attr/wrapper` @ `file:line`) · **Without it** (human impact) · **Level** (🔴/🟡) · **Risk** (🟢/🔁/🧩 + any ⚠️/👁 caveat).
+- **`AskUserQuestion` needs 2–4 options per question.** A **1-item dimension MUST add an explicit "Skip this group" option** (a lone option errors — this bit us in testing). For 2–3 items, optionally lead with "Apply all (N)". For 4+, lead with "Apply all (N)" + show the top few and say what's not shown — never silently truncate.
+- **Never bury** a 🔁/🧩 ripple or ⚠️/👁 caveat — it must be visible in the option, because it changes the cost of "yes".
+
+> Free-form selection ("apply A1,A2 / all a11y / none") is acceptable as a fallback, but the structured per-dimension `AskUserQuestion` above is the default — it's what makes the choice legible.
 
 When applying:
 
@@ -104,6 +110,7 @@ When applying:
 
 ## References
 
+- `references/proposal-format.md` — **how to present findings + phrase the choice** (Step 3 item template, badges, the per-dimension `AskUserQuestion` rules + worked example). Read before Step 3/4.
 - `references/a11y-checklist.md` — the markup-checkable a11y checklist + fix patterns in project idiom
 - `references/xo-animate.md` — xo-animate cascade/auto vs manual, when to animate, MCP pointer
 - `references/xo-hover.md` — the project-local xo-hover convention (attributes + atomic form)
