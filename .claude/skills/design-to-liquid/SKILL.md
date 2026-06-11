@@ -133,6 +133,9 @@ Find the design root folder (typically `design/` but the name varies). Inside, e
 
 Read any markdown documentation in the design folder (brand/style guide, design system, blueprints, component inventories) before touching files.
 
+> [!NOTE]
+> **While reading the section's SCSS/markup, flag a layout-able collection** — N≥3 homogeneous items laid out as a grid (`display:grid` / `grid-template-columns`), masonry (`column-count`), or carousel (`scroll-snap` / slider). That triggers **clarify-protocol Q8 (Layout mechanism)** — offer the `layout` system vs a static grid primitive vs keep. Don't copy the raw layout CSS into the section verbatim. See `references/grid-and-layout.md`.
+
 > [!IMPORTANT]
 > **Read BOTH sides of every `<xo-component src=X>`.** For each `<xo-component src="X">` rendered inside the section's HTML, you MUST open `design/src/components/X/` (both `X.html` and `X.scss`) AND `src/snippets/X/` (project's snippet body + SCSS). These two often share a NAME but render different visual archetypes — see PROGRESS session 5b for the concrete miss (design's `collection-card` was caption-below; project's was overlay-on-image; reuse decision based on one-sided audit produced wrong visual).
 >
@@ -147,7 +150,7 @@ Read any markdown documentation in the design folder (brand/style guide, design 
 > [!IMPORTANT]
 > After Step 1 survey, before Step 2 audit, walk a short decision table and surface any architectural choice the agent would otherwise pick silently. Goal: minimum friction — only ask what's genuinely ambiguous, batch the rest.
 
-Seven decisions to evaluate per port. **Q1–Q6 obey the skip rule; Q7 ALWAYS fires:**
+Eight decisions to evaluate per port. **Q1–Q6 and Q8 obey the skip rule; Q7 ALWAYS fires:**
 
 1. **Section name** — design folder name is brand-coupled (`hero-pet`, `parfum-film`) or has a feature-generic alternative? Skip if name is already clean.
 2. **Block strategy** — design has repeating units? Inline blocks vs theme blocks vs hardcode static. Skip if no blocks.
@@ -156,14 +159,15 @@ Seven decisions to evaluate per port. **Q1–Q6 obey the skip rule; Q7 ALWAYS fi
 5. **Snippet variant choice** — 2+ existing variants are plausible? Pick at audit-entry time. Skip if single obvious match (step C remains the new-variant ask).
 6. **Color scheme default** — design is scheme-neutral or shows multiple variants? Skip if design clearly maps to one scheme.
 7. **CSS strategy — SCSS-first vs XO-CSS-first** — **ALWAYS fire, NEVER skip** (per user policy 2026-05-26). Without an explicit per-port choice the codebase drifts into an inconsistent BEM/atomic mix. Fires on every section port AND every brand-new snippet — even a "clean" 0-question section still gets a single Q7 ask. Quote concrete numbers from the design SCSS audit (lines of layout/spacing/typography vs hover-chain/keyframes). On XO-CSS-first → also invoke `Skill(xo-css)` + `Skill(scss)` (tier-3 sidecar is inevitable); on SCSS-first → invoke `Skill(scss)`.
+8. **Layout mechanism** — section renders **N≥3 homogeneous repeating items** as a grid / masonry / carousel / grid-hover-expand? Ask whether to adopt the **`layout` system** (`{% render 'layout' %}` + `...layoutSchemaSettings()` — recommended; merchant switches grid↔carousel↔masonry + columns/gap, like `product-list`) vs a **static grid primitive** (`<div xo-grid class="xo-grid-block">`, fixed grid) vs keep raw CSS (bespoke only). Skip when the suitable-case gate fails (bespoke/heterogeneous layout, single/2-item, or switching modes breaks meaning). **No `<xo-grid>` element — the grid is `<div xo-grid class="xo-grid-block">`.** See `references/grid-and-layout.md`.
 
-Skip rule (applies to **Q1–Q6 only** — Q7 always fires):
+Skip rule (applies to **Q1–Q6 and Q8** — Q7 always fires):
 
 ```
-COUNT = number of Q1–Q6 whose answer is NOT obvious from context
+COUNT = number of Q1–Q6 + Q8 whose answer is NOT obvious from context
 COUNT == 0 → ask Q7 alone (single AskUserQuestion)
 COUNT == 1 → batch that question + Q7 (one AskUserQuestion call)
-COUNT >= 2 → batch all triggered Q1–Q6 + Q7 into one AskUserQuestion call
+COUNT >= 2 → batch all triggered conditionals + Q7 into one AskUserQuestion call
 COUNT >= 5 → design is too ambiguous; pause and ask freeform instead of batching
 ```
 
@@ -174,7 +178,7 @@ Never ask: CSS class names, schema setting order, internal variable names, valid
 
 **Phrasing matters.** When a question fires, lead with the specific observation from the design (not `{N}` placeholders), name the ambiguity, recommend with reasoning, and surface the downstream consequence. A template-shaped question ("`{N}` units. Which block kind?") signals the agent didn't actually read the design.
 
-→ See `references/clarify-protocol.md` for the full decision table, phrasing principles, example question wordings with observation + reasoning, worked examples (subscribe=0q, hero-collage=3q, featured-products=2q), and anti-patterns.
+→ See `references/clarify-protocol.md` for the full decision table, phrasing principles, example question wordings with observation + reasoning, worked examples (subscribe=1q Q7-only, hero-collage=4q, featured-products=4q), and anti-patterns.
 
 ### Step 2 — Reuse-first audit + variant audit
 
@@ -260,6 +264,7 @@ For every reused snippet whose visual doesn't match the design out-of-the-box, r
 - **Step 0 — Mapping design tokens (colors / fonts / scale / radius / spacing) into theme settings** → `references/tokens-mapping.md`
 - **Reading design documentation / blueprints** → `references/blueprint-protocol.md`
 - **Step 1.5 — Clarify protocol (interview decision table + question templates)** → `references/clarify-protocol.md`
+- **Layout / grid — the `layout` system (grid/carousel/masonry switch) vs static grid vs raw CSS (Q8)** → `references/grid-and-layout.md`
 - **Building the JSON page template** → `references/pages-to-templates.md`
 - **Creating a new liquid section that composes existing snippets** → `references/sections-to-liquid.md`
 - **Promoting hardcoded values to schema settings** → `references/data-to-settings.md`

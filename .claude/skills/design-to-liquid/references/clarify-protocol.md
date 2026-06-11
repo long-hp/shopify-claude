@@ -12,14 +12,15 @@
 Triggered automatically after Step 1 finishes (design HTML + SCSS read, reuse candidates identified). Walks the question table below and decides for each: **ask or skip**.
 
 ```
-COUNT = number of questions whose answer is NOT obvious from context
-COUNT == 0 → skip the protocol entirely, proceed to Step 2
-COUNT == 1 → inline single AskUserQuestion call, then Step 2
-COUNT >= 2 → batch all into one AskUserQuestion call (multi-question), then Step 2
+COUNT = number of CONDITIONAL questions (Q1–Q6, Q8) whose answer is NOT obvious
+        (Q7 CSS strategy ALWAYS fires and is NOT counted)
+COUNT == 0 → ask Q7 alone (single AskUserQuestion), then Step 2
+COUNT == 1 → batch that question + Q7 (one AskUserQuestion call), then Step 2
+COUNT >= 2 → batch all triggered conditionals + Q7 into one AskUserQuestion call, then Step 2
 COUNT >= 5 → design is too ambiguous for a batched interview; pause and ask freeform instead
 ```
 
-Never run for the sake of running. A clean section (`subscribe`, `manifesto` with already-named generics, no commerce data, no animation) should reach Step 2 with zero questions asked.
+Never run for the sake of running. A clean section (`subscribe`, `manifesto` with already-named generics, no commerce data, no animation, no raw-CSS grid) reaches Step 2 having asked exactly **one** question — Q7.
 
 ## Phrasing principles
 
@@ -52,11 +53,12 @@ Walk these in order. For each, apply the **trigger** rule. If trigger fires, the
 | 5 | **Snippet variant choice** | 2+ existing variants are plausible matches in the audit (e.g. `featured-products` vs `featured-collection`, `hotspot` vs `hotspot-popover`) | Single obvious match, OR step C will fire anyway (new variant — already mandatory ask) | **MEDIUM** — refactor easy, but writes early; agent might pick the looser-matching variant and burn effort restyling |
 | 6 | **Color scheme default** | Design is scheme-neutral or shows multiple variants without indicating which is canonical | Design clearly maps to one scheme (cream bg → `background-1`, dark bg → `background-2`) | **LOW-MEDIUM** — scheme is a setting; merchant flips in editor. But default matters for first impression of the preset. Surface in preview if not asked. |
 | 7 | **CSS strategy — SCSS-first vs XO-CSS-first** | **ALWAYS fire** (per user policy 2026-05-26). Section/snippet ports without an explicit CSS strategy default to BEM SCSS — codebase has drifted into inconsistency because of this. Fire even when answer feels obvious | Never — fire on every section + every brand-new snippet, including ports of simple sections (let user pick fast if obvious) | **MEDIUM-HIGH** — switching strategy mid-port costs ~20-40 line re-author. Critical: XO-CSS-first ≠ pure XO-CSS — tier-3 edge cases (hover chains / keyframes / pseudo-elements / multi-target selectors / dynamic CSS-var styles) STAY in SCSS sidecar regardless. See `xo-css/references/basics.md` § "Translating from design SCSS" for the 3-tier framework + font-size guidance (body sizes = direct rem like `fz:1.4rem`; heading sizes = `fz:hN`/`fz:dN` tokens) |
+| 8 | **Layout mechanism** | Section renders **N≥3 homogeneous repeating items** as a grid / grid-block / masonry / carousel / grid-hover-expand (raw-CSS **or** existing `xo-grid-block` / `<xo-carousel>` / `<xo-component src="layout">` markup) AND ≥2 of those modes are interchangeable presentations | Bespoke / heterogeneous layout (hero collage, feature split, comparison table, timeline), single/2-item, or switching modes would break the design's meaning | **MEDIUM** — hand-rolling the layout in section SCSS loses merchant switchability (grid↔carousel↔masonry) + theme consistency. Default = the **`layout` system** (`{% render 'layout' %}` + `...layoutSchemaSettings()`); a static grid primitive (`<div xo-grid class="xo-grid-block">`) when only a fixed grid suffices; raw CSS only if bespoke. See `./grid-and-layout.md` |
 
 The remaining decisions (CSS classes, schema setting order, internal var names, exact placeholder type, vertical spacing, wrapper choice, validator invocation, inline_richtext vs richtext) are **always auto** — agent picks based on convention, surfaces in the preview if non-obvious.
 
 > [!IMPORTANT]
-> Q7 is the only question that **does not skip**. Q1-Q6 obey the COUNT/skip rule. Q7 always fires because the codebase needs an explicit CSS choice per write — silent default has produced an inconsistent mix (BEM-heavy `collection-card` vs XO-CSS-heavy `section-heading-1`). User explicitly requested this on 2026-05-26.
+> Q7 is the only question that **does not skip**. Q1–Q6 and Q8 obey the COUNT/skip rule (fire only when triggered). Q7 always fires because the codebase needs an explicit CSS choice per write — silent default has produced an inconsistent mix (BEM-heavy `collection-card` vs XO-CSS-heavy `section-heading-1`). User explicitly requested this on 2026-05-26.
 
 ## Anti-patterns
 
@@ -196,6 +198,26 @@ When user picks **XO-CSS-first**, the agent MUST invoke `Skill(xo-css)` and read
 
 When user picks **SCSS-first**, the agent MUST invoke `Skill(scss)` before authoring.
 
+### Q8 — Layout mechanism
+
+**Decision shape:** single-select, 2-3 options — `layout` system / static grid primitive / keep raw CSS. Fires only when Step 1 found a **layout-able collection** (N≥3 homogeneous items as grid/masonry/carousel/grid-hover-expand) and the suitable-case gate passes.
+
+**Observe first:** how many items, are they homogeneous (same card repeated), what layout mode the design uses (grid / `column-count` masonry / scroll-snap carousel), the column count + gap, and whether ≥2 modes are interchangeable for this content. Confirm it's NOT bespoke/heterogeneous (hero collage, feature split, comparison table). See `./grid-and-layout.md` before phrasing.
+
+> [!IMPORTANT]
+> Default recommendation is the **`layout` system** (`{% render 'layout' %}` + `...layoutSchemaSettings()`) — it gives the merchant a Type switch across grid/carousel/masonry/grid-hover-expand + columns/gap, and is what every existing collection section uses (`product-list`, `collection-list`, `blog-list`, …). The static grid primitive is `<div xo-grid class="xo-grid-block">` — **there is no `<xo-grid>` element.**
+
+**Good (homogeneous product grid):**
+
+> *Question:* "The design's `.collection__grid` is a hand-rolled `display:grid; grid-template-columns: repeat(4,1fr); gap:1.5rem` over 8 identical product cards. This theme has a `layout` system — wrapping the cards in it gives the merchant a Type switch (grid ↔ carousel ↔ masonry) plus column/gap controls, and matches every other collection section. Adopt the `layout` system, or keep it a fixed grid?"
+>
+> *Options:*
+> - **`layout` system** — `{% render 'layout', content: items, context: section %}` + `...layoutSchemaSettings()`; merchant switches grid/carousel/masonry + columns/gap. Matches `product-list`/`collection-list`. (Recommended)
+> - **Static grid primitive** — `<div xo-grid class="xo-grid-block" style="--xo-col-desktop:4; --xo-col-tablet:2; --xo-col-mobile:2">` with `<xo-item>` children. Fixed grid, lighter; pick if a Type switch isn't wanted.
+> - **Keep raw CSS** — Only if the layout is bespoke (asymmetric spans / named areas) the primitives can't express; surfaced in preview.
+
+**Anti-example:** silently copying `display:grid; grid-template-columns: repeat(4,1fr)` into `<name>.global.scss`. *Loses merchant switchability + theme consistency, and diverges from every other ported collection section.*
+
 ## Worked examples — how the protocol behaves end-to-end
 
 ### Example 1 — `subscribe` (1 question — Q7 only)
@@ -240,8 +262,9 @@ Evaluation:
 - Q5 variant: **ASK** — reuse existing `featured-collection` section vs author new `featured-products` (2 candidates, schema compatibility unclear — exactly the case PLAN has marked ❓)
 - Q6 scheme: SKIP (design clearly cream)
 - **Q7 CSS strategy: FIRE** (always fires; product-card visual archetype matters here)
+- Q8 layout: **ASK** — 4 identical product cards in a raw-CSS 2×2 grid → recommend the `layout` system (merchant could flip grid↔carousel). SKIP only if items aren't a homogeneous collection
 
-→ COUNT(Q1-Q6) = 2 + Q7 = 3 questions total. **Batch 3 questions.**
+→ COUNT(conditional: Q3, Q5, Q8) = 3 + Q7 = 4 questions total. **Batch 4 questions.**
 
 ## Integration with downstream steps
 
