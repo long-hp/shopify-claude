@@ -14,3 +14,7 @@ npm-debug.log*
 .claude/settings.local.json
 /design
 /src
+.editor
+
+# Playwright MCP output (screenshots + editor-qa scratch snapshots)
+.playwright-mcp/

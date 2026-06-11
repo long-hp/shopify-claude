@@ -4,8 +4,11 @@
       "command": "npx",
       "args": [
         "@playwright/mcp@latest",
-        "--headless"
-      ]
+        "--extension"
+      ],
+      "env": {
+        "PLAYWRIGHT_MCP_EXTENSION_TOKEN": ""
+      }
     },
     "xo-components": {
       "type": "http",
