@@ -83,6 +83,17 @@ on /design-to-liquid invocation:
       proceed with normal Step 1 (survey + ask user what to port)
 ```
 
+> [!IMPORTANT]
+> **Resolving the selection is NOT the port.** A picker hit only answers "which
+> section?" — it does not skip any gate. Whatever path got you here, you still
+> owe the full workflow before writing files:
+>
+> 1. **Step 1** — survey BOTH sides (`design/src/components/X` AND `src/snippets/X`) for every `<xo-component>`.
+> 2. **Step 1.5** — clarify protocol. **Q7 (SCSS-first vs XO-CSS-first) ALWAYS fires**, even for a clean 0-question section.
+> 3. **Step 2** — mandatory variant audit per `<xo-component>`: two-sided read → A/B/C ladder. **Step C (new variant) = STOP and ask the user.** Never silently create or hand-inline a snippet to dodge the audit.
+>
+> "Skip discovery" in the algorithm above means skip *finding the section*, not skip the interview or the audit.
+
 ## After porting
 
 Once the new `src/sections/<name>/<name>.liquid` + `schema.js` are written and

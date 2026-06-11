@@ -1,5 +1,6 @@
 ---
 name: design-to-liquid
+argument-hint: "[section-name]"
 description: Use when porting a static HTML design (typically under a design/ folder built with the xo-include + xo-component HTML assembler convention) into this Shopify Liquid theme under src/. ENTRY POINT — every invocation first checks the `xo-design` MCP (`mcp__xo-design__get_selection`) for a section the user picked via the xo-design ◎ Pick section toolbar, so phrases like "/design-to-liquid làm section này" / "port this one" / a bare "/design-to-liquid" auto-target the selected section without re-asking. Falls back to manual section discovery only when no selection is set. Step 0 — map design tokens (colors, fonts, type scale, radius, spacing) into theme settings (global-schema + settings_data + theme.config.json) so every section inherits the foundation via CSS variables; never inline hex/font-family per section. Then covers file-structure mapping (design page → JSON template, design section → liquid section, design component → snippet), converting xo-include/xo-component to {% section %} / {% render %}, lifting per-section hardcoded text/images/links into schema settings, and consuming any design documentation/blueprints. The default working assumption is that src/snippets/ already contains stable, reusable snippets — so BEFORE rendering any snippet inside a new section, audit its existing variants (`<snippet>-1`, `<snippet>-2`, …), trace what's hardcoded vs settings-driven, and pick the closest match. Escalate only when needed — theme setting cascade, then variant modification, then new variant. Never inline section-scoped CSS to hack a snippet's look. Ships a Python validator at .claude/skills/design-to-liquid/scripts/validate-schema.py to run after each schema.js edit.
 ---
 
@@ -100,6 +101,9 @@ on /design-to-liquid …:
      the next invocation doesn't accidentally re-target the same section.
 ```
 
+> [!IMPORTANT]
+> **The picker only resolves WHICH section — it does NOT shorten the workflow.** "auto-target without re-asking" means *don't re-ask the section name*; it does **not** mean skip the interview or the audit. After a picker hit you still run, in order: Step 1 (survey both sides), **Step 1.5 (clarify — Q7 CSS strategy ALWAYS fires)**, **Step 2 (mandatory variant audit for every `<xo-component>` — two-sided read + A/B/C ladder, where C = STOP and ask the user)**, then Step 3+. The picker fast-path is the historical cause of skipped Q7 + skipped snippet audits — do not jump from "read htmlPath" straight to "write the section".
+
 `Selection` returns absolute on-disk paths (`htmlPath`, `scssPath`) you can
 pass straight to `Read()`. Studio-mode previews never expose these tools, so
 treat any failure as "no selection".
@@ -143,7 +147,7 @@ Read any markdown documentation in the design folder (brand/style guide, design 
 > [!IMPORTANT]
 > After Step 1 survey, before Step 2 audit, walk a short decision table and surface any architectural choice the agent would otherwise pick silently. Goal: minimum friction — only ask what's genuinely ambiguous, batch the rest.
 
-Six decisions to evaluate per port:
+Seven decisions to evaluate per port. **Q1–Q6 obey the skip rule; Q7 ALWAYS fires:**
 
 1. **Section name** — design folder name is brand-coupled (`hero-pet`, `parfum-film`) or has a feature-generic alternative? Skip if name is already clean.
 2. **Block strategy** — design has repeating units? Inline blocks vs theme blocks vs hardcode static. Skip if no blocks.
@@ -151,16 +155,20 @@ Six decisions to evaluate per port:
 4. **Animation port scope** — design has scroll-triggered / parallax / per-character motion? Port full vs static-first vs skip. Skip if static.
 5. **Snippet variant choice** — 2+ existing variants are plausible? Pick at audit-entry time. Skip if single obvious match (step C remains the new-variant ask).
 6. **Color scheme default** — design is scheme-neutral or shows multiple variants? Skip if design clearly maps to one scheme.
+7. **CSS strategy — SCSS-first vs XO-CSS-first** — **ALWAYS fire, NEVER skip** (per user policy 2026-05-26). Without an explicit per-port choice the codebase drifts into an inconsistent BEM/atomic mix. Fires on every section port AND every brand-new snippet — even a "clean" 0-question section still gets a single Q7 ask. Quote concrete numbers from the design SCSS audit (lines of layout/spacing/typography vs hover-chain/keyframes). On XO-CSS-first → also invoke `Skill(xo-css)` + `Skill(scss)` (tier-3 sidecar is inevitable); on SCSS-first → invoke `Skill(scss)`.
 
-Skip rule:
+Skip rule (applies to **Q1–Q6 only** — Q7 always fires):
 
 ```
-COUNT = number of questions whose answer is NOT obvious from context
-COUNT == 0 → skip protocol, proceed to Step 2
-COUNT == 1 → inline single AskUserQuestion call
-COUNT >= 2 → batch into one multi-question AskUserQuestion call
+COUNT = number of Q1–Q6 whose answer is NOT obvious from context
+COUNT == 0 → ask Q7 alone (single AskUserQuestion)
+COUNT == 1 → batch that question + Q7 (one AskUserQuestion call)
+COUNT >= 2 → batch all triggered Q1–Q6 + Q7 into one AskUserQuestion call
 COUNT >= 5 → design is too ambiguous; pause and ask freeform instead of batching
 ```
+
+> [!IMPORTANT]
+> **Q7 is the one question that never skips.** A clean section (`subscribe`, `manifesto`) reaches Step 2 having asked exactly one question — Q7. Do NOT collapse "COUNT(Q1–Q6) == 0" into "skip the whole protocol"; that is the historical bug that left CSS strategy un-asked. See `references/clarify-protocol.md` § Q7.
 
 Never ask: CSS class names, schema setting order, internal variable names, validator invocation, wrapper choice, inline_richtext-vs-richtext (follow design), placeholder type, vertical spacing (wrapper handles it). Surface auto-decisions in the post-port preview so the user can catch silent wrong choices.
 
