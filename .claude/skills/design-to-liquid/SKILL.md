@@ -23,7 +23,7 @@ Pipeline skill for porting any HTML design into this Shopify Liquid theme.
 >
 > Creating a brand-new snippet should be the **exception**, not the default. If you think you need a new snippet, search `src/snippets/` first.
 >
-> **Before modifying shared infrastructure** (any file under `src/groups/`, any frequently-shared snippet like `cart-mini`, `predictive-search-base`, `modal-content`, `menu-horizontal`), pause and consider the `system-audit` skill as a pre-port checkpoint — if no existing reference under `references/` documents the pattern you're about to modify, document FIRST (new reference / AGENT.md addendum), commit `.claude` umbrella, THEN apply the port. This mirrors the header-port + modal-port precedents and prevents the next agent from re-deriving the same pattern from scratch.
+> **Before modifying shared infrastructure** (any file under `src/groups/`, any frequently-shared snippet like `cart-mini`, `predictive-search-base`, `modal-content`, `menu-horizontal`), pause and consider the `system-upgrade` skill as a pre-port checkpoint — if no existing reference under `references/` documents the pattern you're about to modify, document FIRST (new reference / AGENT.md addendum), commit `.claude` umbrella, THEN apply the port. This mirrors the header-port + modal-port precedents and prevents the next agent from re-deriving the same pattern from scratch.
 
 ## Two layers of authority — project conventions + Shopify-native
 
@@ -300,7 +300,8 @@ Before reporting "done", close the loop with project state:
 1. **Update `.agent-state/PLAN.md`** — flip the row's status icon (⚪→🔵 while in progress, then 🔵→✅ on completion). Update the "Last refreshed" date in the header.
 2. **Append `.agent-state/PROGRESS.md`** — add a new entry at the top per the `planner` skill's `progress-protocol.md`. Capture: Goal, Done (files touched), Decisions (anything non-obvious you chose), Open (what's pending or blocked for next session).
 3. **Suggest the `/polish` finishing pass** — this port pass focuses on structure + schema + visual match, so a11y, scroll-reveal (`xo-animate`), and hover details often get partially applied or dropped. Before calling it fully done, tell the user they can run `/polish <this target>` to audit + apply accessibility fixes, `xo-animate` opportunities, and `xo-hover` interactions. It's a suggestion, not a gate — `polish` is a standalone skill the user opts into.
-4. **Don't commit** — that's `/git`'s job. The user runs `/git` separately when they want to checkpoint.
+4. **Suggest the `/editor-qa` live test** — structure + visual match are verified statically here, but how the section behaves once it's actually in the Theme Editor (settings wiring through, blocks adding cleanly, the mobile breakpoint stacking right) only shows at runtime. Tell the user they can run `/editor-qa <this target>` to have the agent drive the real editor — add the section, exercise its settings/blocks, flip to mobile view, and screenshot both breakpoints against the design. Like `polish`, it's an opt-in suggestion, not a gate; it needs the Playwright extension connected to a logged-in editor tab (the `editor-qa` skill's setup notes cover the one-time wiring).
+5. **Don't commit** — that's `/git`'s job. The user runs `/git` separately when they want to checkpoint.
 
 If the state files don't exist, hand off to `planner`'s kickoff protocol first.
 
@@ -313,4 +314,5 @@ If the state files don't exist, hand off to `planner`'s kickoff protocol first.
 - `scss` — BaseHTML SCSS framework, BEM
 - `xo-css` — atomic utility classes inside liquid
 - `polish` — `/polish` finishing pass (a11y + xo-animate + xo-hover) on the just-ported target
+- `editor-qa` — `/editor-qa` live-editor test pass (add section/blocks, exercise settings, desktop↔mobile) on the just-ported target
 - `git` — `/git` scoped commit workflow when ready to checkpoint
