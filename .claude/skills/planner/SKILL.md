@@ -1,5 +1,6 @@
 ---
 name: planner
+argument-hint: "[next | resume | status]"
 description: Use at the START of every conversation working on this project, and again whenever planning, tracking progress, or doing gap analysis on the design-to-liquid port. Owns three state documents under .agent-state/ that persist across sessions — PLAN.md (what needs porting and in what order; sections, snippets, presets, gaps), PROGRESS.md (append-only changelog so the next conversation knows what was done and where to resume), INVENTORY.md (live mirror of src/ vs design/ coverage, refreshable by a scanner script). Invoke this skill when the user asks "what's next?", "where did we stop?", "resume", "what's been done?", "compare with design", "what's missing", or when a new conversation opens on this project (read state first). This skill answers WHAT to do and STATUS — it does NOT cover HOW to port a section; for that, hand off to the design-to-liquid skill once the next item is picked. Ships a scanner at .claude/skills/planner/scripts/scan-inventory.py that regenerates .agent-state/INVENTORY.md from the filesystem.
 ---
 
