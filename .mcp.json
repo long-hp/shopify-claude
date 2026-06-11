@@ -1,0 +1,22 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "@playwright/mcp@latest",
+        "--headless"
+      ]
+    },
+    "xo-components": {
+      "type": "http",
+      "url": "https://wc-mcp.awe7.com/mcp",
+      "headers": {
+        "Authorization": "Bearer TOKEN"
+      }
+    },
+    "xo-design": {
+      "type": "http",
+      "url": "http://localhost:3894/mcp"
+    }
+  }
+}

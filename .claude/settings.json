@@ -1,0 +1,26 @@
+{
+  "model": "claude-opus-4-8[1m]",
+  "env": {
+    "CLAUDE_CODE_DISABLE_AUTO_MEMORY": "1"
+  },
+  "permissions": {
+    "defaultMode": "bypassPermissions"
+  },
+  "enabledPlugins": {
+    "skill-creator@claude-plugins-official": true,
+    "context7@claude-plugins-official": true
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/skill-reminder.cjs"
+          }
+        ]
+      }
+    ]
+  }
+}
