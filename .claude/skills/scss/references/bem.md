@@ -136,5 +136,5 @@ Block-Element-Modifier naming for custom SCSS components in this theme.
 
 ## Related
 
-- `./layout.md` — composing components with `xo-grid`
+- `./layout.md` — composing components with the `xo-grid-block` grid
 - `./functions.md` — color/fz helpers inside BEM rules

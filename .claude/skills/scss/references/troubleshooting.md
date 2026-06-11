@@ -8,14 +8,14 @@ Common SCSS issues and fixes.
 
 **Problem:** Columns don't change at the expected breakpoint.
 
-**Fix:** Check the CSS variable syntax — values are plain numbers, not lengths.
+**Fix:** Check the column var syntax — values are plain column counts, not lengths. (The grid is `<div xo-grid class="xo-grid-block">`; there is no `<xo-grid>` element.)
 
 ```liquid
 <!-- ❌ -->
-<xo-grid style="--md: 3px">
+<div xo-grid class="xo-grid-block" style="--xo-col-desktop: 3px">
 
 <!-- ✅ -->
-<xo-grid style="--md: 3">
+<div xo-grid class="xo-grid-block" style="--xo-col-desktop: 3; --xo-col-tablet: 2; --xo-col-mobile: 1">
 ```
 
 ---
@@ -85,7 +85,7 @@ Common SCSS issues and fixes.
 
 | Feature       | Usage                              | Example                  |
 | ------------- | ---------------------------------- | ------------------------ |
-| Grid          | `<xo-grid style="--md: 3">`        | 3 columns from medium    |
+| Grid          | `<div xo-grid class="xo-grid-block" style="--xo-col-desktop: 3">` | 3 desktop columns |
 | Container     | `<xo-container>`                   | Centered container       |
 | Line clamp    | `class="xo-line-2"`                | 2 lines max              |
 | Media query   | `@include media('>md')`            | Desktop and up           |

@@ -1,6 +1,6 @@
 # Layout Components
 
-`xo-container` and `xo-grid` web components, plus helper classes.
+`xo-container` web component + the `xo-grid-block` grid convention, plus helper classes. (The `<xo-grid>` element is removed — see Grid below.)
 
 ---
 
@@ -37,82 +37,56 @@ xo-container {
 
 ---
 
-## `xo-grid`
+## Grid — `xo-grid-block`
 
-Responsive grid system driven by CSS variables.
+> [!IMPORTANT]
+> **The `<xo-grid>` element is removed — never write `<xo-grid …>`.** The grid is a plain `<div>` carrying the `xo-grid` *attribute* + the `xo-grid-block` *class*, sized by per-device column vars. Children are wrapped in `<xo-item>`. (Existing `<xo-grid>` usages in `src/` are legacy — migrate per the table below.)
 
 ### Basic grid
 
 ```liquid
-<xo-grid>
-  <div>Item 1</div>
-  <div>Item 2</div>
-  <div>Item 3</div>
-</xo-grid>
+<div xo-grid class="xo-grid-block" style="--xo-col-desktop: 4; --xo-col-tablet: 2; --xo-col-mobile: 1">
+  <xo-item>Item 1</xo-item>
+  <xo-item>Item 2</xo-item>
+</div>
 ```
 
-### Responsive columns
+`--xo-col-{desktop|tablet|mobile}` = number of **equal** columns at each device tier (desktop >991px · tablet 768–991px · mobile <768px). Defaults 4 / 2 / 1. Gap inherits `--xo-grid-col-gap` / `--xo-grid-row-gap` (themed in `grid-config.scss`); override per-instance with `--xo-col-gap-{tier}` / `--xo-row-gap-{tier}`.
 
-```liquid
-<!-- 1 col mobile, 2 col tablet, 4 col desktop -->
-<xo-grid style="--xs: 1; --md: 2; --xl: 4">
-  <div>Item</div>
-  <div>Item</div>
-</xo-grid>
-```
+> For a **collection of repeating items** (products, cards, articles), prefer the full **`layout` system** — `{% render 'layout', content: items, context: section %}` — which adds a merchant Type switch (grid/carousel/masonry) over this same grid. See `design-to-liquid/references/grid-and-layout.md`.
 
-### Auto-fill with minimum column width
+### Migrating legacy `<xo-grid>`
 
-```liquid
-<xo-grid style="--col-width: 250px">
-  <!-- columns auto-fill at min 250px -->
-</xo-grid>
-```
+| Legacy `<xo-grid>` | → `xo-grid-block` |
+| --- | --- |
+| element `<xo-grid>` … `</xo-grid>` | `<div xo-grid class="xo-grid-block">` … `</div>` |
+| `style="--xs:N; --md:M; --lg:K"` | `style="--xo-col-mobile:N; --xo-col-tablet:M; --xo-col-desktop:K"` |
+| breakpoint vars | `--xs` → mobile · `--md` → tablet · `--lg` → desktop (`--sm`/`--xl`/`--xxl` had no device tier — fold into the nearest) |
+| `--col-width: 250px` (auto-fill) | no direct equivalent — set explicit per-device columns, or a small SCSS `grid-template-columns: repeat(auto-fill, minmax(250px,1fr))` rule |
 
-### Grid-item column span
-
-```liquid
-<xo-grid>
-  <div style="--xs: 12; --md: 6; --xl: 4">
-    <!-- 12-col mobile, 6-col tablet, 4-col desktop (12-col grid) -->
-  </div>
-</xo-grid>
-```
-
-### Item positioning
-
-```liquid
-<xo-grid style="--md: 4">
-  <div style="--start-md: 2">
-    <!-- starts at column 2 from medium up -->
-  </div>
-  <div style="--order-md: -1">
-    <!-- reordered from medium up -->
-  </div>
-</xo-grid>
-```
+> [!WARNING]
+> **Span is NOT a var-rename.** Legacy `<xo-grid>` let children span a 12-col grid via `--lg:6` etc. (e.g. `featured-collection`'s 2-column split). `xo-grid-block` is **equal columns only** (`repeat(N, 1fr)`) — no per-child span var. A span layout must be rethought: model it as the real column count, or add native `grid-column: span N` on the child in SCSS. **Verify each span usage by eye — don't auto-convert.**
 
 ---
 
 ## CSS Variables
 
 ```scss
-// Container/grid
---xo-grid-col-gap: 30px;   // column gap
---xo-grid-row-gap: 30px;   // row gap
---align: normal;            // align-items
+// Container
+--xo-container-width: 1400px;
+--xo-container-gap: 20px;
 
-// Per-breakpoint columns
---xs: 1;   --sm: 2;   --md: 3;
---lg: 4;   --xl: 4;   --xxl: 5;
+// Grid (xo-grid-block) — equal columns per device tier
+--xo-col-desktop: 4;       // columns >991px
+--xo-col-tablet: 2;        // columns 768–991px
+--xo-col-mobile: 1;        // columns <768px
 
-// Auto-fill min width
---col-width: 250px;
-
-// Item positioning (per breakpoint)
---start-{breakpoint}: 1;    // grid-column-start
---order-{breakpoint}: 1;    // order
+// Gap (themed; per-instance override optional)
+--xo-grid-col-gap: 3rem;   // column gap
+--xo-grid-row-gap: 3rem;   // row gap
 ```
+
+> The legacy `<xo-grid>` element vars (`--xs`/`--sm`/`--md`/`--lg`/`--xl`/`--xxl`, `--col-width`, `--start-*`, `--order-*`) are gone with the element. Use the `--xo-col-*` vars above.
 
 ---
 
@@ -148,18 +122,17 @@ Responsive grid system driven by CSS variables.
 
 ```liquid
 <xo-container>
-  <xo-grid style="--xs: 1; --md: 2; --lg: 3; --xl: 4">
+  <div xo-grid class="xo-grid-block" style="--xo-col-desktop: 4; --xo-col-tablet: 2; --xo-col-mobile: 1">
     {% for product in collection.products %}
-      <div>
-        {% render 'product-card', product: product %}
-      </div>
+      <xo-item>{% render 'product-card', product: product %}</xo-item>
     {% endfor %}
-  </xo-grid>
+  </div>
 </xo-container>
 ```
 
 ## Related
 
-- `./media.md` — breakpoints used by `xo-grid` variables
+- `./media.md` — breakpoint tiers (mobile / tablet / desktop)
 - `./functions.md` — SCSS helpers for styling grid children
 - `./bem.md` — BEM naming for custom components inside the grid
+- `design-to-liquid/references/grid-and-layout.md` — the `layout` system (grid/carousel/masonry switch) + full `<xo-grid>` → `xo-grid-block` migration

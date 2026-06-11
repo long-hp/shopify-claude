@@ -122,5 +122,5 @@ $breakpoints: (
 ## Related
 
 - `./functions.md` — color/fz/lh/ls helpers
-- `./layout.md` — `xo-grid` / `xo-container`
+- `./layout.md` — `xo-grid-block` grid / `xo-container`
 - `./troubleshooting.md` — `@include media` not working

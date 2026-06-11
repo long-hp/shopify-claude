@@ -1,6 +1,6 @@
 ---
 name: scss
-description: MUST be invoked (via Skill tool) BEFORE creating or editing any `.scss` file (component `.global.scss`, shared `src/styles/`) AND when user picks "SCSS-first" in clarify-protocol Q7 (also invoked alongside XO-CSS-first since the tier-3 sidecar is unavoidable). Also MUST be invoked when XO-CSS cannot express a style — `&:hover .child` multi-target hover chains, `@keyframes` animations, pseudo-elements (`::before`/`::after`), complex sibling/descendant selectors, dynamic CSS-variable-driven styles. Those edge cases ALWAYS land in SCSS regardless of project CSS strategy. Memory of framework helpers (`color()`, `fz()`, `lh()`, `ls()`, `media('>md')` mixin breakpoints, `<xo-container>`/`<xo-grid>`) is incomplete — agent skip = inlined hex values, raw px units, missing mobile media wraps. Covers the BaseHTML SCSS framework + BEM naming (`xo-block__element--modifier`) + the choice axis vs XO-CSS atomic utilities.
+description: MUST be invoked (via Skill tool) BEFORE creating or editing any `.scss` file (component `.global.scss`, shared `src/styles/`) AND when user picks "SCSS-first" in clarify-protocol Q7 (also invoked alongside XO-CSS-first since the tier-3 sidecar is unavoidable). Also MUST be invoked when XO-CSS cannot express a style — `&:hover .child` multi-target hover chains, `@keyframes` animations, pseudo-elements (`::before`/`::after`), complex sibling/descendant selectors, dynamic CSS-variable-driven styles. Those edge cases ALWAYS land in SCSS regardless of project CSS strategy. Memory of framework helpers (`color()`, `fz()`, `lh()`, `ls()`, `media('>md')` mixin breakpoints, `<xo-container>`/`xo-grid-block`) is incomplete — agent skip = inlined hex values, raw px units, missing mobile media wraps. Covers the BaseHTML SCSS framework + BEM naming (`xo-block__element--modifier`) + the choice axis vs XO-CSS atomic utilities.
 ---
 
 # SCSS
@@ -45,19 +45,21 @@ BaseHTML SCSS framework: mixins, functions, and layout components for theme-spec
 
 ```liquid
 <xo-container>
-  <xo-grid style="--md: 3">
-    <div>Item 1</div>
-    <div>Item 2</div>
-    <div>Item 3</div>
-  </xo-grid>
+  <div xo-grid class="xo-grid-block" style="--xo-col-desktop: 3; --xo-col-tablet: 2; --xo-col-mobile: 1">
+    <xo-item>Item 1</xo-item>
+    <xo-item>Item 2</xo-item>
+    <xo-item>Item 3</xo-item>
+  </div>
 </xo-container>
 ```
+
+> The `<xo-grid>` element is removed — the grid is `<div xo-grid class="xo-grid-block">`. See `references/layout.md` § Grid.
 
 ## Navigation — When to read which file
 
 - **Using SCSS functions** (color, fz, lh, ls) → `references/functions.md`
 - **Responsive design / breakpoints** → `references/media.md`
-- **`xo-container` / `xo-grid` layout** → `references/layout.md`
+- **`xo-container` / `xo-grid-block` grid layout** → `references/layout.md`
 - **BEM naming conventions** → `references/bem.md`
 - **Hitting an error or stuck** → `references/troubleshooting.md`
 
