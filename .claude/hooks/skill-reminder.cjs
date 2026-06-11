@@ -31,6 +31,9 @@ process.stdin.on('end', () => {
   const toolName = input.tool_name || input.toolName || '';
   const toolInput = input.tool_input || input.toolInput || {};
   const filePath = toolInput.file_path || toolInput.filePath || '';
+  // Content being written — Write uses `content`, Edit uses `new_string`. Used for
+  // content-aware nudges (e.g. raw-CSS grid detection) on top of path matching.
+  const content = toolInput.content || toolInput.new_string || '';
 
   if (!filePath) {
     process.exit(0);
@@ -41,7 +44,7 @@ process.stdin.on('end', () => {
     process.exit(0);
   }
 
-  const reminders = matchReminders(filePath);
+  const reminders = matchReminders(filePath, content);
   if (reminders.length === 0) {
     process.exit(0);
   }
@@ -62,7 +65,7 @@ process.stdin.on('end', () => {
  * Match file path against patterns; return array of { skill, rules }.
  * Order matters — most-specific first.
  */
-function matchReminders(filePath) {
+function matchReminders(filePath, content = '') {
   const out = [];
 
   const isSnippetLiquid = /\/src\/snippets\/.+\.liquid$/.test(filePath);
@@ -125,6 +128,19 @@ function matchReminders(filePath) {
     });
   }
 
+  if (isAnyLiquid) {
+    out.push({
+      skill: 'liquid (translations)',
+      headline: 'Visible strings in `.liquid` → `| t`',
+      rules: [
+        'Theme-owned visible text (button/UI labels, a11y `aria-label`/`visually-hidden`, status/error/empty messages) → `\'<namespace>.<path>\' | t`, never hardcoded.',
+        'Author keys in the SOURCE file `src/locales/NN-<namespace>.json` (namespace = filename), NOT the compiled `shopify/locales/...`.',
+        'Reuse-first: `grep -rin "<text>" src/locales/` before adding a key. Merchant-edited content → schema setting (not `| t`); schema labels/defaults are never `| t`.',
+      ],
+      action: 'See `liquid/references/translations.md` for the `| t`-vs-setting-vs-hardcode decision + add-a-key procedure.',
+    });
+  }
+
   if (isGlobalScss) {
     out.push({
       skill: 'scss',
@@ -148,6 +164,35 @@ function matchReminders(filePath) {
         'No raw hex / px in component-scope styles.',
       ],
       action: 'Invoke `Skill(scss)` for framework helper reference.',
+    });
+  }
+
+  // Content-aware — the <xo-grid> element is removed; flag it if written in liquid.
+  // Matches the element `<xo-grid ` / `<xo-grid>` but NOT the attribute form `<div xo-grid …>`.
+  if (isAnyLiquid && /<xo-grid[\s>]/.test(content)) {
+    out.push({
+      skill: 'scss / design-to-liquid (grid)',
+      headline: '`<xo-grid>` element is removed',
+      rules: [
+        'Don\'t write the `<xo-grid>` element. The grid is `<div xo-grid class="xo-grid-block" style="--xo-col-desktop:N; --xo-col-tablet:N; --xo-col-mobile:N">` with `<xo-item>` children (attribute + class, not an element).',
+        'For a collection of repeating items, prefer the `layout` system: `{% render \'layout\', content: items, context: section %}`.',
+      ],
+      action: 'See `scss/references/layout.md` § Grid (migration table) + `design-to-liquid/references/grid-and-layout.md`.',
+    });
+  }
+
+  // Content-aware — raw-CSS grid/masonry landing in a component SCSS → nudge the layout system.
+  const hasRawLayout = /display\s*:\s*grid|grid-template-(?:columns|rows)|grid-auto-flow|column-count\s*:/i.test(content);
+  if (isGlobalScss && hasRawLayout) {
+    out.push({
+      skill: 'design-to-liquid (layout)',
+      headline: 'Raw-CSS grid/masonry in a `.global.scss`',
+      rules: [
+        'This theme has a `layout` system (`src/snippets/_layout/`) — don\'t re-implement `display:grid`/`column-count` per component. For a collection of repeating items, prefer `{% render \'layout\', content: items, context: section %}` + `...layoutSchemaSettings()` (merchant switches grid/carousel/masonry + columns/gap).',
+        'For a fixed grid use `<div xo-grid class="xo-grid-block" style="--xo-col-desktop:N; --xo-col-tablet:N; --xo-col-mobile:N">` with `<xo-item>` children — there is NO `<xo-grid>` element.',
+        'If this came from a design port, clarify Q8 (layout mechanism) should have fired — confirm the user explicitly chose raw CSS (bespoke only: asymmetric spans / grid-template-areas).',
+      ],
+      action: 'See `design-to-liquid/references/grid-and-layout.md`.',
     });
   }
 
