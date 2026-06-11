@@ -46,6 +46,21 @@ python .claude/skills/editor-qa/scripts/grep-refs.py .playwright-mcp/qa.md "Add 
 
 (Reusing `qa.md` means each snapshot overwrites the last — which is what you want, since old refs are stale anyway. If `.playwright-mcp/` isn't gitignored yet in this project, add it.)
 
+### Scope the snapshot — don't full-tree every step
+
+The 60KB is the slow part: generating the whole a11y tree and writing it every action is the single biggest drag on a run. `browser_snapshot` also takes **`target`** (snapshot only the subtree under a given element ref/selector) and **`depth`** (cap the tree depth) — use them to keep each snapshot a few KB instead of 60.
+
+The rhythm that's both fast and safe:
+
+- **Full-tree snapshot once, to locate** — the first time you need to find a region across the whole editor (the right group's "Add section", a toolbar button like "Show mobile view", the preview's nav). Grab the container ref while you're there.
+- **Scoped snapshots to iterate** — once you're working inside one region (setting several fields in a section's panel, walking a section's block list), re-snapshot with `target` = that region's container ref. Refs are still volatile so you still re-snapshot before each click, but a scoped re-snapshot is cheap, which is the whole point:
+
+```
+browser_snapshot(target: "<panel-or-region-ref>", filename: ".playwright-mcp/qa.md")
+```
+
+If you don't have a stable container ref handy, a `depth`-capped full snapshot is the lighter fallback. Reserve the unbounded full-tree snapshot for genuine "where is X across the whole editor" moments.
+
 ## Disambiguating the many "Add section" buttons
 
 "Add section" appears **many times** in one snapshot — once per section group (Header, Template, Footer, Overlay, Popup Group…) plus the between-section insert points. They all have the same accessible name, so the ref alone is ambiguous.

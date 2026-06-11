@@ -34,7 +34,9 @@ After navigating, confirm the session is live: the URL should redirect to `admin
 
 ## 2 · Exercise the unit
 
-This is the core loop. Work against the editor chrome, which lives inside a nested iframe — **read `references/editor-dom.md` first** for how refs, snapshots, and the iframe nesting behave; the rules there (re-snapshot before every click, refs are volatile, snapshots go to a file not into context) are what keep this from thrashing.
+This is the core loop. Work against the editor chrome, which lives inside a nested iframe — **read `references/editor-dom.md` first** for how refs, snapshots, and the iframe nesting behave; the rules there (re-snapshot before every click, refs are volatile, snapshots go to a file not into context, **scope snapshots with `target`/`depth` instead of full-tree every step**) are what keep this both correct and fast.
+
+**Recipe (optional, faster).** If you were handed a recipe — from the user, or from design-to-liquid's completion handoff — naming which blocks to add and which fields to set, **follow it directly and skip live discovery** of the section's block/field inventory. That's the fast path: you already know what to exercise, so you're not snapshotting the panel just to learn what exists. If there's no recipe, discover live as below (add representative blocks, set the design-significant fields). The recipe is a shortcut, never a requirement — editor-qa works fine without one.
 
 **Add the section** (if not already on the template):
 - Find the right group's **"Add section"** button (there are many — one per group plus between-section inserts; disambiguate by the group heading that precedes it in the snapshot).
@@ -48,9 +50,11 @@ This is the core loop. Work against the editor chrome, which lives inside a nest
 - Checkbox / toggle → click.
 - Select → `browser_select_option` (or click → pick).
 - Range → set the value.
-- After each meaningful change, glance at the preview (screenshot) to confirm it wired through.
+- To confirm a field wired through, a **scoped snapshot** of the panel/preview is enough — it already tells you the value changed. Don't screenshot after every field.
 
 **Scroll** the preview to verify the whole section renders top-to-bottom, not just the part in view.
+
+**Screenshot only at checkpoints — not every action.** Each screenshot is a round-trip, and the a11y snapshot already tells you the editor's state, so reserve pixels for things only a human eye can judge. Take a screenshot when: a section or block has just been **added** (confirm it landed), the unit's **final desktop** state, the **final mobile** state, and any spot where a **defect is visible** (to document it). Setting a text field or toggling a checkbox doesn't warrant a screenshot unless something looks off.
 
 ## 3 · Interaction & motion — hover + scroll (deactivate the inspector first)
 
@@ -96,6 +100,18 @@ Where a defect maps to a fix, name the likely culprit (a missing mobile media wr
 This is the merchant's theme. Changes you make in the editor are **staged but non-destructive until Save is pressed** — the Save button merely darkens to show there's something to commit.
 
 **Do not click Save on your own.** When the pass is done, tell the user what's staged and ask how to proceed: **Save** the changes, **revert** (discard / undo), or **leave as-is** for them to decide in the editor. Wait for their call.
+
+## 8 · Clean up the scratch
+
+A run leaves a pile under `.playwright-mcp/` — the reused `qa.md` snapshot plus a `page-*.png` screenshot per checkpoint. In a real session that grows to dozens of files / several MB, and it's pure throwaway: stale refs and point-in-time screenshots that serve nothing once the pass is reported. It's gitignored so it never reaches a commit, but it clutters the working tree and grows unbounded across runs.
+
+So once testing is truly done (after the report and the Save-discipline call), sweep it:
+
+```bash
+rm -rf .playwright-mcp/
+```
+
+Playwright MCP recreates the dir on the next run, so this is safe. (If you'd rather be surgical, delete just `.playwright-mcp/qa.md` and the `.playwright-mcp/page-*.png` files.) The one exception: if the user explicitly asked to keep a specific screenshot ("save the mobile shot so I can look at it"), preserve that file and sweep the rest — don't delete something they asked for.
 
 ## References
 
