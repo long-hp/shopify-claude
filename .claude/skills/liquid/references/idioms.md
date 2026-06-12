@@ -154,7 +154,12 @@ The project's `image` snippet handles:
 - Lazy-load on/off (`loading: 'lazy'` for below-fold, `'eager'` for LCP)
 - Placeholder fallback (`<placeholder-image>` in design mode, none in production)
 
-Don't write raw `{{ image | image_url: width: X | image_tag: ... }}` unless you have a specific reason.
+**Rendering an image into the DOM always goes through the `image` snippet — there is no "structural exception".** The one legitimate reason to call `image_url` directly is a CSS `background-image` (see §8); that is *not* an `<img>` in the DOM. If a layout *seems* to need a raw `<img>` — a scroll / parallax effect, a fill-the-parent stage, a wrapper whose extra `<div>` looks like it would break a fill-chain — it doesn't: pass `aspect_ratio: 'none'` + `height_fill: true` and the snippet's `.xo-image` wrapper fills its parent (object-fit cover included). Animation wrappers like `<xo-parallax-scroll>` operate on their *own* element, not the inner `<img>`, so the snippet's wrapper never disturbs keyframe DOM reads (`this.parentElement.offsetWidth`, `container.querySelector(...)`, etc.).
+
+```liquid
+{# Fill-the-parent (e.g. inside a parallax stage) — wrapper fills, no raw <img> #}
+{%- render 'image', image: s.image, aspect_ratio: 'none', height_fill: true, alt: s.image_alt, class: 'xo-<name>__media' -%}
+```
 
 ## 8. Responsive image sizing — width recipe
 
