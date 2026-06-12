@@ -23,6 +23,38 @@ export const myPreset = createPreset({
 });
 ```
 
+## Section padding in presets — the input-param names are NOT the setting IDs
+
+A recurring trap. In a section's `schema.js` you set padding defaults via the helper:
+
+```javascript
+...sectionSchemaSettings({ padding_top: 60, padding_bottom: 60 })
+```
+
+Here `padding_top` / `padding_bottom` are **input parameters** of `sectionSchemaSettings` — they seed default values. They are *not* the setting IDs that end up in the compiled schema. The helper expands them (via `paddingAttrsSchemaSettings` → `spaceSchemaSettings`, idSuffix `_padding`) into a device-aware control whose emitted IDs are:
+
+```javascript
+device_padding: "desktop",      // select: which device the values below apply to
+inherit_desktop_padding: true,  // checkbox: mobile inherits desktop
+top_padding_desktop: 60,
+top_padding_mobile: 60,
+bottom_padding_desktop: 60,
+bottom_padding_mobile: 60,
+left_padding_desktop: 0,
+left_padding_mobile: 0,
+right_padding_desktop: 0,
+right_padding_mobile: 0,
+```
+
+So in a **preset's `settings`**, key on those real IDs — never `padding_top` / `padding_bottom`. Writing `padding_top: 60` in a preset matches no setting, so Shopify silently drops it; the section may *look* right purely because the schema default already equals the value you intended, which masks the bug until someone wants a preset value that differs from the default.
+
+Two more things worth knowing:
+
+- **You can usually omit padding from the preset entirely.** The `sectionSchemaSettings({...})` input already set the default, so a preset only needs these keys when it wants a value *different* from that default.
+- **The padding range is 0–100 (px).** A helper input like `padding_bottom: 120` produces an out-of-range default that the editor rejects — cap intended values at 100.
+
+`validate-schema.py <section-dir>` cross-checks the sibling `preset-*.js` against the schema and flags both mistakes (`undefined setting 'padding_top'`, `… greater than max 100`), so run it after editing either file.
+
 ## Example — Hero preset
 
 ```javascript
