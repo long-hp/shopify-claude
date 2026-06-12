@@ -169,6 +169,8 @@ When you need to understand a web component's attributes/slots, query the **`xo-
 > [!IMPORTANT]
 > **Parameter names rarely match 1:1.** The design's data keys (`label`, `href`, etc.) are its own contract. The src snippet has its own parameter names (`text`, `link`, etc.). **Always read the existing src snippet's liquid-doc** for the correct param names — don't copy design data keys blindly.
 
+> A common case: a `section-heading` component (overline + title + intro). Override it to the project's `section-heading` snippet, never hand-write the header — see `components-to-snippets.md` § "Worked primitive — `section-heading`".
+
 ### 4. Hardcoded values → settings
 
 Promote every hardcoded `<p>`, heading, link, image, count, choice into `section.settings.X` or `block.settings.X`.

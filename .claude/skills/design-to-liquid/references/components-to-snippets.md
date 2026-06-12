@@ -164,6 +164,48 @@ If the snippet needs schema settings exposed to whichever section/block renders 
 
 The matching `schema.js` exports a `createSchemaSettings(...)` factory — see the `schema` skill → `reusable-settings.md`. The consuming section spreads it into its own settings.
 
+## Worked primitive — `section-heading` (override, never hand-write)
+
+Most sections open with an overline + title + intro cluster. The project already ships a reusable `section-heading` snippet for exactly this, wired through the `context`/reusable-settings pattern above — so when a design section contains one, **render the snippet; don't re-author the `<header class="xo-section-heading">` markup.** Hand-writing it duplicates a shipped primitive and drifts from the look every other section gets.
+
+**When it applies.** The design section contains either an explicit `<xo-component src="section-heading">`, or a header matching its signature: `<header class="xo-section-heading">` with an overline (`.xo-section-heading__overline`), a required title (`.xo-section-heading__title` — an `h2` that may carry `<em>` italic emphasis), and an optional intro (`.xo-section-heading__intro`). Design-component params: `align` (left/center/right, default center), `overline?`, `title` (required), `intro?`. Source: `design/src/components/section-heading/`.
+
+**Wire it (established pattern — see `src/sections/featured-collection/`, `src/sections/best-sellers/`).** In the section's `schema.js`, spread the snippet's exported settings:
+
+```javascript
+import { sectionHeadingSchemaSettings } from "../../snippets/section-heading/section-heading/schema.js";
+
+settings: [
+  ...sectionHeadingSchemaSettings(),       // emits ids: heading, sub_heading, description, heading_size, sub_heading_size, alignment
+  // …rest of the section's settings
+]
+```
+
+Then render the dispatcher in the section `.liquid` — it reads those `section.settings` ids itself:
+
+```liquid
+{% render 'section-heading' %}
+```
+
+Pass input overrides to drop fields the design doesn't show — `sectionHeadingSchemaSettings({ subHeadingDisabled: true })` / `{ descriptionDisabled: true }`. Per "defaults are placeholders, not design copy" (`data-to-settings.md`), the text defaults stay generic placeholders (heading default = the section's purpose), not the design's literal title. When you're *not* on `section.settings` (e.g. rendering per-block in a loop), call the variant directly with explicit params: `{% render 'section-heading-1', heading: ..., sub_heading: ..., description: ..., alignment: ... %}`.
+
+**Param mapping is NOT 1:1.** The snippet uses different names — verified by its DOM order (`sub_heading` renders above `heading` above `description`, matching the design's overline-above-title-above-intro):
+
+| Design component | `section-heading` snippet |
+| --- | --- |
+| `overline` (renders above) | `sub_heading` |
+| `title` | `heading` |
+| `intro` | `description` |
+| `align` | `alignment` |
+
+The title's `<em>` survives because `heading` is a `richtext` setting. As always, confirm names against the snippet's `{% comment %}` doc block rather than carrying the design's keys over.
+
+**Respect the design — don't over-reach (negativeMatch).** The snippet replaces *only* the overline/title/intro cluster. Keep it section-specific when the header is more than that:
+
+- Header has nav / search / a CTA link like "View all" as a direct child (e.g. a featured-products head) → the `section-heading` sits *inside* the section's own header layout next to the CTA. Render `{% render 'section-heading' %}` for the heading cluster, keep the CTA/nav as section markup.
+- Header is filter-pills + search → a different shape; not `section-heading`.
+- Header has a stat number beside the title (e.g. `4.9/5`) → a different primitive (stat-heading); not `section-heading`.
+
 ## SCSS Co-location
 
 If the snippet needs styles:
