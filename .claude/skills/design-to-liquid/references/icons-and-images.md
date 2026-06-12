@@ -75,7 +75,7 @@ If `src/snippets/image/` or `src/snippets/media/` exists, use it (always do — 
 {% render 'image',
   image: section.settings.image,
   loading: 'eager',
-  ratio: '75/100',
+  aspect_ratio: '75/100',
   object_fit: 'cover',
   alt: section.settings.image.alt
 %}
@@ -85,7 +85,10 @@ Find the right param names by reading the snippet's liquid-doc and grepping exis
 
 ### Liquid pattern (fallback — inline)
 
-When no project image snippet exists:
+> [!IMPORTANT]
+> **This project always ships the `image` snippet** (`src/snippets/_base/image/image.liquid`), so this fallback essentially never applies here — it's shown only to illustrate the markup the snippet produces under the hood. Every `<img>` rendered into the DOM goes through `{% render 'image' %}`, including scroll / parallax / fill-the-parent cases (use `aspect_ratio: 'none'` + `height_fill: true` — the `.xo-image` wrapper fills its parent and animation wrappers act on their own element, not the `<img>`). The only `image_url`-direct case is a CSS `background-image`. See `liquid` skill → `idioms.md` §7.
+
+When no project image snippet exists (other projects only):
 
 ```liquid
 {%- if section.settings.image != blank -%}
