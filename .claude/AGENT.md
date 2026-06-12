@@ -125,7 +125,9 @@ Why: PROGRESS is the next-agent's read-on-start orientation for "where are we in
 | `extract-icon`         | Sync Lucide SVG content into `src/snippets/icons/icon-*.liquid` from `unpkg.com/lucide-static@latest`. Triggered by "update icons", "sync icons", "lucide → snippet". |
 | `system-upgrade`       | Check, evaluate + **upgrade** the `.claude/` system (skills, AGENT.md, hooks, MCP, validators) + Shopify-platform drift. Distribution-repo aware. **Skill-targeted changes are delegated to `skill-creator`.** Triggered by `/system-upgrade`, `/system-audit`, "kiểm tra hệ thống", "nâng cấp hệ thống", "check .claude". |
 
-## Validators (run after every schema or preset edit)
+## Validators
+
+**After every `schema.js` or preset edit** — run the schema validator:
 
 ```bash
 # Validate a section schema.js after writing it
@@ -138,6 +140,18 @@ python .claude/skills/design-to-liquid/scripts/validate-schema.py --all
 Catches: disallowed `inline_richtext` tags (e.g. `<br>`), missing range bounds, undefined select options, step violations, unresolved block types, theme-settings `current` as string, orphan color schemes.
 
 Also surfaces Theme Store label/copy warnings (missing labels, British spelling, banned phrases like `CTA`/`X position`/`homepage`/`slider`/`sub-heading`, `&` or `?` in labels). Run with `--strict` to escalate warnings to errors. See `.claude/skills/design-to-liquid/references/theme-store-requirements.md`.
+
+**After every `.liquid` markup edit** — run the Liquid validator:
+
+```bash
+# Validate one section / dir of liquid after writing it
+python .claude/skills/design-to-liquid/scripts/validate-liquid.py src/sections/<name>/
+
+# Sweep everything
+python .claude/skills/design-to-liquid/scripts/validate-liquid.py --all
+```
+
+Catches runtime-silent Liquid bugs that don't show up in schema validation — currently the `assign`-with-condition mistake (`{% assign x = a != blank %}` doesn't evaluate the comparison; `assign` takes a value, not a condition — see `liquid` skill `gotchas.md` #31). The rule set is intentionally small and grows as new bug classes surface.
 
 ## Key conventions
 
