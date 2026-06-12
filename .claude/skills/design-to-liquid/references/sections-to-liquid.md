@@ -95,6 +95,11 @@ export const schema = createSectionSchema({
 
     // Width / height / color scheme / background / padding / decoration —
     // standard section chrome controls. Overrides via `input`:
+    // NOTE: `padding_top`/`padding_bottom` here are INPUT defaults, NOT setting
+    // IDs. The emitted IDs are `top_padding_desktop`, `bottom_padding_desktop`, …
+    // (range 0–100). In `preset-N.js` key on those real IDs, or omit padding
+    // (this input already set the default). Never put `padding_top` in a preset —
+    // it matches nothing and is silently dropped. See schema skill → preset.md.
     ...sectionSchemaSettings({ padding_top: 80, padding_bottom: 80 }),
 
     // Grid / carousel / freedom layout controls (only when the section has a layout):

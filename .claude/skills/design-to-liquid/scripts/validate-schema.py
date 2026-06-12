@@ -656,6 +656,16 @@ def main() -> None:
 
     if args.target:
         validate_section_schema(args.target)
+        # Back-stop: also validate any sibling preset-*.js so the section/dir
+        # command (the one the porting workflow actually runs) catches
+        # preset↔schema id mismatches — e.g. a preset key `padding_top` that
+        # matches no emitted setting ID (the real ids are top_padding_desktop,
+        # …). Previously only --preset / --all checked presets, so dir-mode
+        # passed while the preset silently shipped dead keys. Mirrors --all.
+        _tp = Path(args.target).resolve()
+        _sec_dir = _tp if _tp.is_dir() else _tp.parent
+        for _preset in sorted(_sec_dir.glob("preset-*.js")):
+            validate_section_preset(_preset)
         did_work = True
     if args.preset:
         validate_section_preset(args.preset)
