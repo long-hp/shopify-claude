@@ -474,6 +474,42 @@ For rich-text metafields, `.value` may need filtering through render helpers dep
 
 ---
 
+## 31. `assign` takes a value, not a condition
+
+`{% assign %}` evaluates its right-hand side as a single **value** — a variable or literal, optionally piped through filters. It is **not** an expression evaluator: comparison and logical operators (`==`, `!=`, `<>`, `>`, `<`, `>=`, `<=`, `contains`, `and`, `or`) are only understood by tags that *take a condition* (`if` / `unless` / `elsif` / `case`-`when`). So you cannot fold a comparison into an assign and get a boolean back:
+
+```liquid
+{# WRONG — the `!= blank` is not evaluated; has_float_1 does not become a usable boolean #}
+{%- liquid
+  assign s = section.settings
+  assign has_float_1 = s.float_1 != blank
+-%}
+```
+
+Two correct forms:
+
+```liquid
+{# A — branch, assign an explicit true/false #}
+{%- liquid
+  assign s = section.settings
+  assign has_float_1 = false
+  if s.float_1 != blank
+    assign has_float_1 = true
+  endif
+-%}
+```
+
+```liquid
+{# B — skip the flag, put the comparison straight in the {% if %} #}
+{%- if s.float_1 != blank -%}
+  …
+{%- endif -%}
+```
+
+Reach for **B** by default — when a condition is checked once, an intermediate boolean is just noise. Use **A** only when the same boolean gates several places (e.g. multiple blocks) and recomputing the comparison inline each time would be harder to read. This bites most inside the `{% liquid %}` prelude, where `has_x` flags sit next to real assigns and the value-vs-condition distinction is easy to forget — keep prelude assigns to values + filters, and move every comparison into an `if`.
+
+---
+
 ## Related
 
 - `references/tags.md` — tag syntax
