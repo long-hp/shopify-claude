@@ -132,6 +132,9 @@ For each question: the decision shape, what to observe before phrasing, one good
 > - **Section blocks per collection** — Per-block picker + override fields; pick if per-card customization is on the roadmap
 > - **Single `collection` picker** — One collection setting, iterate its products inside the section
 
+> [!NOTE]
+> **Collection-tabs form.** If Step 1 flagged a collection-tabs signature (tab row above a product grid, tabs swap collections), Q3 is **not** the generic 3-way above — it resolves to **one inline block per tab, each with a `collection` picker** (no `collection_list`, no `All` tab). Confirm the collection-per-tab framing with the user, then port via `references/collection-tabs.md`.
+
 ### Q4 — Animation port scope
 
 **Decision shape:** single-select, 3 options — port full / static first / skip.

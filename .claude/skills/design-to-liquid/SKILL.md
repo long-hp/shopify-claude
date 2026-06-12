@@ -136,6 +136,9 @@ Read any markdown documentation in the design folder (brand/style guide, design 
 > [!NOTE]
 > **While reading the section's SCSS/markup, flag a layout-able collection** — N≥3 homogeneous items laid out as a grid (`display:grid` / `grid-template-columns`), masonry (`column-count`), or carousel (`scroll-snap` / slider). That triggers **clarify-protocol Q8 (Layout mechanism)** — offer the `layout` system vs a static grid primitive vs keep. Don't copy the raw layout CSS into the section verbatim. See `references/grid-and-layout.md`.
 
+> [!NOTE]
+> **Flag a collection-tabs signature** — a row of tab triggers (text pills / buttons, e.g. category names) sitting directly **above a repeating product-card grid**, where clicking a tab is meant to swap which collection's products show. The design ships these tabs *static* (`xo-tabs` / button row), but they must be **converted** to the `xo-collection-tabs` trio — do NOT pass them through. On match, route to `references/collection-tabs.md` and steer **clarify Q3** to its collection-tabs form (one inline block per tab, each with a `collection` picker — no `collection_list`, no `All` tab). Don't confuse with generic content `xo-tabs`, a static grid with no tabs, or collection-page filters.
+
 > [!IMPORTANT]
 > **Read BOTH sides of every `<xo-component src=X>`.** For each `<xo-component src="X">` rendered inside the section's HTML, you MUST open `design/src/components/X/` (both `X.html` and `X.scss`) AND `src/snippets/X/` (project's snippet body + SCSS). These two often share a NAME but render different visual archetypes — see PROGRESS session 5b for the concrete miss (design's `collection-card` was caption-below; project's was overlay-on-image; reuse decision based on one-sided audit produced wrong visual).
 >
@@ -207,7 +210,7 @@ The bulk of the porting effort is **selecting the right variant + passing the ri
 
 For each design section that doesn't have a direct equivalent in `src/sections/`, create one that **composes existing snippets**.
 
-**While writing markup** — if you reach for any Liquid tag, filter, or object you're not 100% sure about (e.g. `content_for 'blocks'`, `paginate`, `form 'X'`, `image_url:`, `metafield`), consult the `liquid` skill first — its `.claude/skills/liquid/references/{tags,filters,objects,blocks}.md` cover the official syntax + project idioms. Beats relying on memory.
+**Before writing or editing any `.liquid` markup — invoke `Skill(liquid)`.** Not "if you're unsure" — that phrasing is exactly what failed, because the Liquid mistakes that bite are the ones you're *wrongly confident* about (e.g. `{% assign x = a != blank %}`, which compiles but never evaluates the comparison). A confidence gate can't catch a confident error. So treat this like Q7's scss/xo-css invocation: unconditional, up front. Its `references/{tags,filters,objects,blocks,idioms,gotchas}.md` carry the official syntax + project idioms. This is the *front gate*; `validate-liquid.py` (below) is the *back stop* — the gate prevents the whole class of Liquid errors, the validator only catches the specific rules it already encodes. Use both.
 
 **After writing or editing `schema.js`**, run the source-side validator:
 
@@ -216,6 +219,14 @@ python .claude/skills/design-to-liquid/scripts/validate-schema.py src/sections/<
 ```
 
 Detects: disallowed `inline_richtext` tags, missing range bounds, undefined select options, step violations, unresolved block types, theme-store label hygiene.
+
+**After writing or editing any `.liquid` markup**, run the Liquid validator:
+
+```bash
+python .claude/skills/design-to-liquid/scripts/validate-liquid.py src/sections/<name>/
+```
+
+Catches runtime-silent Liquid bugs the schema validator can't see — currently the `assign`-with-condition mistake (`{% assign x = a != blank %}` doesn't evaluate the comparison; `assign` takes a value, not a condition — fix per the `liquid` skill's `gotchas.md` #31). This is a verification gate, not optional polish: it closes the loop on confident-but-wrong Liquid the same way `validate-schema.py` does for schema, rather than trusting that you remembered to consult the `liquid` skill.
 
 > [!IMPORTANT]
 > **Compile gotcha — blocks + snippets don't compile via `npm run build`.** The `vite-xotiny` plugin processes `src/blocks/` and `src/snippets/` only in `configureServer` (dev mode). To compile a new block/snippet without dev running, force-process via direct import:

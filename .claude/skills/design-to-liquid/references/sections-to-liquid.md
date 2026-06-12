@@ -142,6 +142,9 @@ Liquid — **do NOT replicate this**. Wrap your inner content with `{% render 's
 
 When you need to understand a web component's attributes/slots, query the **`xo-components` MCP** server.
 
+> [!IMPORTANT]
+> **Exception — `xo-collection-tabs` is NOT pass-through.** A design section with a row of tabs above a product-card grid (each tab = a collection) ships *static* tabs (`xo-tabs` or a button/pill row) that must be **converted** to the `xo-collection-tabs` / `-trigger` / `-content` trio + Section Rendering API wiring — passing them through unchanged yields a dead section. See `references/collection-tabs.md`.
+
 ### 3. `<xo-component>` → `{% render %}`
 
 ```html
