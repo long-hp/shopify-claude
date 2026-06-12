@@ -125,9 +125,12 @@ export const schema = createSectionSchema({
     { type: "color_scheme", id: "color_scheme", label: "Color scheme", default: "background-1" },
 
     { type: "header", content: "Content" },
-    { type: "text",            id: "overline",  label: "Overline",   default: "Some overline" },
-    { type: "inline_richtext", id: "heading",   label: "Heading",    default: "A heading with <em>emphasis</em>." },
-    { type: "text",            id: "cta_label", label: "CTA label",  default: "View all" },
+    // `default`s below are generic PLACEHOLDERS, not the design's copy — see
+    // "Defaults are placeholders, not design copy" above. Heading = section
+    // purpose; the <em> shows the emphasis pattern; button = "Button label".
+    { type: "text",            id: "overline",  label: "Overline",   default: "Overline" },
+    { type: "inline_richtext", id: "heading",   label: "Heading",    default: "Featured <em>products</em>" },
+    { type: "text",            id: "cta_label", label: "CTA label",  default: "Button label" },
     { type: "url",             id: "cta_link",  label: "CTA link" },
 
     { type: "header", content: "Layout" },
@@ -179,9 +182,23 @@ export const schema = createSectionSchema({
 });
 ```
 
-## Defaults Matter
+## Defaults are placeholders, not design copy
 
-Use the design's hardcoded value as the setting `default`. The merchant's first paint then matches the design exactly — they only edit if they want to change.
+A setting's `default` (and any preset value) is a **generic placeholder that teaches the merchant what content belongs in the field** — it is NOT the design's literal text. This is how every Shopify theme behaves: a freshly inserted section shows self-explanatory filler the merchant then replaces, never someone else's finished copy. The design's actual words (`"Build their first ritual."`) are only the **visual target while porting** — they are not persisted into `default`, into a preset, or into a JSON template.
+
+Per-kind rule (mirrors Shopify's Dawn theme — see `dawn/sections/*.liquid` + `dawn/locales/en.default.schema.json`):
+
+| Setting kind | `default` placeholder | Dawn examples |
+| --- | --- | --- |
+| heading / title | the section or block's **purpose name**, or a short prompt | `"Image with text"`, `"Featured collection"`, `"Talk about your brand"` |
+| body (`richtext`/`textarea`) | a generic sentence describing **what kind of content goes here** | `"<p>Pair text with an image to focus on your chosen product, collection, or blog post. Add details on availability, style, or even provide a review.</p>"` |
+| button label | the field name itself | `"Button label"` |
+| overline / short label | the field name or a one-word hint | `"Overline"` |
+
+> [!IMPORTANT]
+> **Plain strings — no `t:` keys.** Dawn writes `default: "t:sections.image-with-text.blocks.heading.settings.heading.default"` (a translation-key indirection resolved from `locales/*.schema.json`). This project does **not** use locale schema files — write the placeholder as a literal string directly in `schema.js`: `default: "Featured collection"`.
+>
+> **`default` ≠ the `placeholder` attribute.** `default` pre-fills a *value* the merchant can edit; the separate `placeholder` attribute is the greyed hint shown only while the field is empty. This rule is about `default` (and preset values).
 
 ## Naming Conventions
 

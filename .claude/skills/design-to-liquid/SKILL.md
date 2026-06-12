@@ -248,9 +248,9 @@ Catches runtime-silent Liquid bugs the schema validator can't see — currently 
 
 ### Step 4 — Lift hardcoded values to settings
 
-Every hardcoded string / image / URL / number becomes a schema setting.
+Every hardcoded string / image / URL / number becomes a schema setting. Each setting's `default` is a generic **placeholder** (Shopify/Dawn convention — heading = section purpose, body = "what goes here", button = "Button label"), **not** the design's literal copy; the design's actual text is only the porting target, never persisted.
 
-→ See `references/data-to-settings.md`.
+→ See `references/data-to-settings.md` § "Defaults are placeholders, not design copy".
 
 ### Step 5 — JSON page template
 
