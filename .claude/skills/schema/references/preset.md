@@ -55,6 +55,12 @@ Two more things worth knowing:
 
 `validate-schema.py <section-dir>` cross-checks the sibling `preset-*.js` against the schema and flags both mistakes (`undefined setting 'padding_top'`, `… greater than max 100`), so run it after editing either file.
 
+## Preset & default values are placeholders, not real content
+
+Content-bearing `default`s (heading, body, button label) and any preset `settings` values are **generic placeholders** that teach the merchant what belongs in the field — never a design's literal copy or a real product's text. This mirrors Shopify's Dawn theme: heading defaults are the section's purpose name (`"Featured collection"`, `"Image with text"`), body defaults are a "what goes here" sentence (`"<p>Share information about your brand…</p>"`), button defaults are `"Button label"`.
+
+In practice a preset usually should **not set content values at all** — it declares the block tree and layout, and lets each setting's own placeholder `default` supply the text (exactly as Dawn presets do). Only set a value in a preset when it must differ from the schema default. Full rationale + per-kind table: `design-to-liquid` skill → `data-to-settings.md` § "Defaults are placeholders, not design copy".
+
 ## Example — Hero preset
 
 ```javascript
