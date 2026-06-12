@@ -469,6 +469,15 @@ def validate_section_schema(path: str) -> None:
                 if n_steps > 101:
                     err(f"setting '{sid}' (range): {n_steps:.0f} steps ((max-min)/step) exceeds "
                         f"Shopify's 101-step limit. Increase step or narrow min/max.")
+                # Shopify also rejects a range with too FEW positions: the number of
+                # selectable values (max-min)/step + 1 must be at least 3 ("Range
+                # settings must have at least 3 steps" at upload). So (max-min)/step >= 2,
+                # i.e. max >= min + 2*step. The compiler and theme-check miss it.
+                if n_steps < 2:
+                    n_values = int(n_steps) + 1
+                    err(f"setting '{sid}' (range): only {n_values} selectable value(s) "
+                        f"((max-min)/step + 1) — Shopify requires at least 3. "
+                        f"Widen max (>= min + 2*step = {smin + 2 * sstep:g}) or reduce step.")
         elif stype in ("select", "radio"):
             if not s.get("options"):
                 err(f"setting '{sid}' ({stype}): missing 'options' array")
