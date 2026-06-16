@@ -17,6 +17,7 @@ DISTINGUISH — these look similar but must **NOT** be converted:
 | Tabs switch arbitrary content panels (FAQ, specs, story) unrelated to collections | generic content tabs | keep `xo-tabs` (see `xo-components` MCP) |
 | A product grid with **no** tab row | a single collection / product list | plain `collection` picker or product list |
 | Tabs/checkboxes that **filter the current collection page** (price, size, availability) | storefront filter / facet UI | Shopify `filters` on the collection template — not this pattern |
+| Tabbed grid where each card has an **add-to-bundle** action + a running **bundle sidebar** (count / discount tiers / total) | build-your-own-bundle | the **Bundle variant** below — `xo-bundle-*` runtime **combined with** these collection-tabs |
 
 > [!IMPORTANT]
 > **No "All" tab.** This project's port uses one inline **block per tab**, and every block maps to exactly **one real collection**. If the design shows an `All` pill, it does not become a tab — drop it (or, only if the user asks, the merchant creates a real "everything" collection and adds it as another block). Never synthesise an `All` handle.
@@ -117,3 +118,36 @@ Author with `Skill(schema)`, then validate (`python .claude/skills/design-to-liq
 - **(b) Don't leave the design's tabs in place.** Static `xo-tabs` / button rows have no data wiring — converting to the trio is the whole point. A passed-through tab row is a dead section.
 - **(c) Product cards must be a reusable snippet, not inline markup.** The AJAX swap replaces `innerHTML` wholesale; if the cards were inline one-off markup, the fetched fragment can drift from the initial render and lose styling/behaviour. A single shared `{% render %}` guarantees the initial grid and every swapped grid are byte-identical.
 - **(d) Keep triggers + content in the same section.** Both the first paint and the fetched fragment come from this one section file — splitting them across sections breaks the standalone `/collections/{handle}` render the API depends on.
+
+## Bundle variant — bundle-card tabs (build-your-own-bundle)
+
+Some tabbed sections aren't for **browsing** — they're for **building**: the merchant's customer accumulates a selection across the tabs toward a tiered discount ("pick 3 / 6 / 9, save 5% / 10% / 15%"), then adds the whole set to cart in one go. This is still the collection-tabs pattern underneath — it just runs on the `xo-bundle-*` runtime on top of it.
+
+**When it's the bundle variant (not plain collection-tabs).** Plain collection-tabs = the tab *swaps which products show*. Bundle variant = each card has an **add-to-bundle** action, the tabs are **chapters/steps you accumulate across**, and there's a running **bundle sidebar** — a live item count, a progress bar toward discount tiers, a running total, and a single "add the set to cart". See that → port the bundle runtime, not a bare product grid.
+
+> The design may *mock* the tabs with static `<xo-tabs>` (as the `bundle-builder` reference does), but its own note says that's "the documented xo-collection-tabs pattern, demoed with xo-tabs" — so in Liquid the chapter tabs still become the `xo-collection-tabs` trio above.
+
+**Combined structure.** Keep everything from the base pattern (collection-tabs trio, blocks-first, one collection per tab), and layer the bundle runtime around it:
+
+1. **Wrap the whole section** in `<xo-bundle-provider>` carrying the discount tiers (e.g. `xo-discounts='[{"type":"percentage","minQuantity":3,"value":5}, …]'`).
+2. **Chapter tabs = the `xo-collection-tabs` trio** — each tab is a collection, exactly as the base pattern. Each tab/chapter owns a **group** token.
+3. **Each product renders as the `bundle-card` snippet** (NOT product-card), and you pass the tab/collection's **group** to the card so its add lands in that chapter's accumulator. The card's add control is `xo-bundle-add xo-group="<group>"`.
+4. **Sidebar** with the live bundle (see element list below) + `xo-cart-add xo-for-bundle` to post the whole set.
+
+**Card snippet — audit, don't assume.** Use the project's `bundle-card` snippet via the normal "Audit Snippet Variants BEFORE Rendering" ladder (`sections-to-liquid.md`). Its signature's negativeMatch keeps the choice honest: a product card **without** an add-to-bundle action / without the `xo-product` wrapper → that's plain `product-card`; a swatch + compare card **not** inside an `xo-bundle-provider` → `product-card-2`. `bundle-card` is specifically the card that adds into a bundle.
+
+**`xo-bundle-*` runtime elements** (names + roles observed in the `bundle-builder` design — confirm exact attributes/slots via the `xo-components` MCP at port time; don't copy the design's demo attrs blind):
+
+| Element | Role |
+| --- | --- |
+| `xo-bundle-provider` | wraps the section; declares the discount tiers (`xo-discounts`) |
+| `xo-bundle-add` | the per-card add button; `xo-group` assigns the product to a chapter accumulator |
+| `xo-bundle-content` | per-group container the runtime fills with added line-items (`xo-group`; `xo-empty` → placeholder) |
+| `xo-bundle-size` / `xo-bundle-progress` / `xo-bundle-step` | live count / progress bar / discount-tier markers (`xo-min-quantity`) |
+| `xo-bundle-price` | running total; `xo-compare-at-price` shows the struck pre-discount total once a tier unlocks |
+| `xo-cart-add xo-for-bundle` | posts the whole bundle; auto-enables once it has items |
+
+**Schema.** Same blocks-first base — one inline block per chapter, each a `collection` picker. The discount tiers become a setting (a small repeatable structure, or per-tier blocks of `{ minQuantity, value }`) fed into `xo-bundle-provider xo-discounts`. Shape it via `Skill(schema)`.
+
+> [!NOTE]
+> No section JS — the `xo-bundle-*` web components drive add/remove/total/discount entirely. Your job is the markup + wiring the groups (tab/collection ↔ `xo-group`) + the schema; don't hand-write any bundle logic.
