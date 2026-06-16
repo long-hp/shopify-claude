@@ -153,9 +153,9 @@ Read any markdown documentation in the design folder (brand/style guide, design 
 > [!IMPORTANT]
 > After Step 1 survey, before Step 2 audit, walk a short decision table and surface any architectural choice the agent would otherwise pick silently. Goal: minimum friction — only ask what's genuinely ambiguous, batch the rest.
 
-Eight decisions to evaluate per port. **Q1–Q6 and Q8 obey the skip rule; Q7 ALWAYS fires:**
+Eight decisions to evaluate per port. **Q1 (name) and Q7 (CSS) ALWAYS fire; Q2–Q6 and Q8 obey the skip rule:**
 
-1. **Section name** — design folder name is brand-coupled (`hero-pet`, `parfum-film`) or has a feature-generic alternative? Skip if name is already clean.
+1. **Section name** — **ALWAYS fire.** Before the name is baked into 5-7 files, ask the user to confirm or change it. Offer `Keep <current>` (recommended when already clean) + 2-3 suggested names built from the **feature + layout** formula (what it does + how it's arranged → `featured-products-tabs`, `hero-collage`, `testimonial-carousel`); the harness adds an "Other" free-text choice. See `references/clarify-protocol.md` Q1.
 2. **Block strategy** — design has repeating units? Inline blocks vs theme blocks vs hardcode static. Skip if no blocks.
 3. **Collection / product data source** — section displays collections/products? `collection_list` vs section blocks per collection vs single `collection` picker. Skip if no commerce data.
 4. **Animation port scope** — design has scroll-triggered / parallax / per-character motion? Port full vs static-first vs skip. Skip if static.
@@ -164,18 +164,22 @@ Eight decisions to evaluate per port. **Q1–Q6 and Q8 obey the skip rule; Q7 AL
 7. **CSS strategy — SCSS-first vs XO-CSS-first** — **ALWAYS fire, NEVER skip** (per user policy 2026-05-26). Without an explicit per-port choice the codebase drifts into an inconsistent BEM/atomic mix. Fires on every section port AND every brand-new snippet — even a "clean" 0-question section still gets a single Q7 ask. Quote concrete numbers from the design SCSS audit (lines of layout/spacing/typography vs hover-chain/keyframes). On XO-CSS-first → also invoke `Skill(xo-css)` + `Skill(scss)` (tier-3 sidecar is inevitable); on SCSS-first → invoke `Skill(scss)`.
 8. **Layout mechanism** — section renders **N≥3 homogeneous repeating items** as a grid / masonry / carousel / grid-hover-expand? Ask whether to adopt the **`layout` system** (`{% render 'layout' %}` + `...layoutSchemaSettings()` — recommended; merchant switches grid↔carousel↔masonry + columns/gap, like `product-list`) vs a **static grid primitive** (`<div xo-grid class="xo-grid-block">`, fixed grid) vs keep raw CSS (bespoke only). Skip when the suitable-case gate fails (bespoke/heterogeneous layout, single/2-item, or switching modes breaks meaning). **No `<xo-grid>` element — the grid is `<div xo-grid class="xo-grid-block">`.** See `references/grid-and-layout.md`.
 
-Skip rule (applies to **Q1–Q6 and Q8** — Q7 always fires):
+Skip rule (applies to **Q2–Q6 and Q8** — Q1 and Q7 always fire):
 
 ```
-COUNT = number of Q1–Q6 + Q8 whose answer is NOT obvious from context
-COUNT == 0 → ask Q7 alone (single AskUserQuestion)
-COUNT == 1 → batch that question + Q7 (one AskUserQuestion call)
-COUNT >= 2 → batch all triggered conditionals + Q7 into one AskUserQuestion call
+COUNT = number of Q2–Q6 + Q8 whose answer is NOT obvious from context
+COUNT == 0 → ask Q1 + Q7 (two questions, one AskUserQuestion call)
+COUNT == 1 → batch Q1 + that question + Q7
+COUNT >= 2 → batch Q1 + all triggered conditionals + Q7
+AskUserQuestion holds ≤4 questions → with Q1 + Q7 always present, one call fits ≤2
+  conditionals; if more, split into two calls (keep Q1 in the first)
 COUNT >= 5 → design is too ambiguous; pause and ask freeform instead of batching
 ```
 
+The minimum interview is now TWO questions (Q1 + Q7) — never one.
+
 > [!IMPORTANT]
-> **Q7 is the one question that never skips.** A clean section (`subscribe`, `manifesto`) reaches Step 2 having asked exactly one question — Q7. Do NOT collapse "COUNT(Q1–Q6) == 0" into "skip the whole protocol"; that is the historical bug that left CSS strategy un-asked. See `references/clarify-protocol.md` § Q7.
+> **Q1 (name) and Q7 (CSS) never skip.** A clean section (`subscribe`, `manifesto`) reaches Step 2 having asked exactly two questions — Q1 + Q7. Do NOT collapse "COUNT(Q2–Q6, Q8) == 0" into "skip the whole protocol"; that is the historical bug that left CSS strategy un-asked (and now would skip the name confirmation too). See `references/clarify-protocol.md` § Q1 + Q7.
 
 Never ask: CSS class names, schema setting order, internal variable names, validator invocation, wrapper choice, inline_richtext-vs-richtext (follow design), placeholder type, vertical spacing (wrapper handles it). Surface auto-decisions in the post-port preview so the user can catch silent wrong choices.
 

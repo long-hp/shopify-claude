@@ -12,12 +12,16 @@
 Triggered automatically after Step 1 finishes (design HTML + SCSS read, reuse candidates identified). Walks the question table below and decides for each: **ask or skip**.
 
 ```
-COUNT = number of CONDITIONAL questions (Q1–Q6, Q8) whose answer is NOT obvious
-        (Q7 CSS strategy ALWAYS fires and is NOT counted)
-COUNT == 0 → ask Q7 alone (single AskUserQuestion), then Step 2
-COUNT == 1 → batch that question + Q7 (one AskUserQuestion call), then Step 2
-COUNT >= 2 → batch all triggered conditionals + Q7 into one AskUserQuestion call, then Step 2
+COUNT = number of CONDITIONAL questions (Q2–Q6, Q8) whose answer is NOT obvious
+        (Q1 Section name AND Q7 CSS strategy BOTH always fire and are NOT counted)
+COUNT == 0 → ask Q1 + Q7 (two questions, one batched AskUserQuestion call), then Step 2
+COUNT == 1 → batch Q1 + that question + Q7 (one AskUserQuestion call), then Step 2
+COUNT >= 2 → batch Q1 + all triggered conditionals + Q7 into one AskUserQuestion call, then Step 2
 COUNT >= 5 → design is too ambiguous for a batched interview; pause and ask freeform instead
+
+The minimum interview is now TWO questions (Q1 + Q7) — never one.
+
+`AskUserQuestion` holds at most **4 questions per call**. With Q1 + Q7 always present, a single call fits at most **2 conditional** questions (Q1 + 2 + Q7 = 4). If Q1 + conditionals + Q7 would exceed 4, split into **two AskUserQuestion calls** (keep Q1 in the first); when conditional COUNT ≥ 5 the design is too ambiguous to batch — pause and ask freeform instead.
 ```
 
 Never run for the sake of running. A clean section (`subscribe`, `manifesto` with already-named generics, no commerce data, no animation, no raw-CSS grid) reaches Step 2 having asked exactly **one** question — Q7.
@@ -46,7 +50,7 @@ Walk these in order. For each, apply the **trigger** rule. If trigger fires, the
 
 | # | Question | Trigger (ask when) | Skip when | Cost if wrong |
 |---|----------|--------------------|-----------|---------------|
-| 1 | **Section name** | Design folder name is brand-coupled (`hero-pet`, `parfum-film`, `tagline-pet`) OR has an obvious feature-generic alternative the agent can suggest | Name is already clean and feature-generic (`subscribe`, `manifesto`, `journal`, `hero`, `footer`) | **HIGH** — rename touches 5-7 files (section dir, schema id, page preset reference, PLAN row, any `{% section %}` callsite, future imports) |
+| 1 | **Section name** | **ALWAYS fire** — every port confirms the name before it's committed. Propose names from the feature + layout formula (Q1 detail); when the folder name is already clean, "Keep `<current>`" is simply the recommended option | Never — fire on every section port | **HIGH** — rename touches 5-7 files (section dir, schema id, page preset reference, PLAN row, any `{% section %}` callsite, future imports), so confirming up front is far cheaper than renaming after |
 | 2 | **Block strategy** | Design has 2+ repeating units with similar shape | No blocks needed (single-render section), OR shape is so different per unit that hardcoded markup wins | **HIGH** — inline blocks live in section schema, theme blocks live in `src/blocks/<group>/<name>/` with their own schema. Wrong choice = re-author both files. |
 | 3 | **Collection / product data source** | Section displays N collections or N products | No commerce data in this section | **HIGH** — `collection_list` setting (merchant picks N from store, iterate dynamically) vs section blocks (per-block collection picker + per-card override) vs single `collection` picker (1 collection, iterate its products) produce 3 entirely different schema + markup shapes |
 | 4 | **Animation port scope** | Design has scroll-triggered / parallax / per-character motion / IntersectionObserver-driven sequencing | Static design (CSS hover only is not "animation" for this purpose) | **MEDIUM** — animation can be added later as a separate pass, but bundling the effort upfront avoids the 2nd re-survey |
@@ -58,7 +62,9 @@ Walk these in order. For each, apply the **trigger** rule. If trigger fires, the
 The remaining decisions (CSS classes, schema setting order, internal var names, exact placeholder type, vertical spacing, wrapper choice, validator invocation, inline_richtext vs richtext) are **always auto** — agent picks based on convention, surfaces in the preview if non-obvious.
 
 > [!IMPORTANT]
-> Q7 is the only question that **does not skip**. Q1–Q6 and Q8 obey the COUNT/skip rule (fire only when triggered). Q7 always fires because the codebase needs an explicit CSS choice per write — silent default has produced an inconsistent mix (BEM-heavy `collection-card` vs XO-CSS-heavy `section-heading-1`). User explicitly requested this on 2026-05-26.
+> **Two questions always fire: Q1 (Section name) and Q7 (CSS strategy).** Q2–Q6 and Q8 obey the COUNT/skip rule (fire only when triggered).
+> - **Q7** always fires because the codebase needs an explicit CSS choice per write — silent default has produced an inconsistent mix (BEM-heavy `collection-card` vs XO-CSS-heavy `section-heading-1`). User requested this 2026-05-26.
+> - **Q1** always fires because the name is baked into 5-7 files at port time (dir, schema id/class, page-preset reference, PLAN row, `{% section %}` callsites), so renaming afterward is expensive — confirming up front is cheap, and the user should always get a deliberate name decision.
 
 ## Anti-patterns
 
@@ -79,22 +85,35 @@ The remaining decisions (CSS classes, schema setting order, internal var names, 
 
 For each question: the decision shape, what to observe before phrasing, one good example, one anti-example for contrast where useful.
 
-### Q1 — Section name
+### Q1 — Section name (always fires)
 
-**Decision shape:** single-select, 2 options — feature-generic alternative vs design folder name.
+**Decision shape:** single-select AskUserQuestion. **Option 1 = `Keep <current-name>`** (recommend it when the folder name is already clean). **Options 2–4 = 2-3 suggested names** built from the feature + layout formula below. The AskUserQuestion harness auto-adds an **"Other"** free-text choice, so the user can always type their own — provide only `Keep` + the suggestions, never hand-author an "Other" option.
 
-**Observe first:** the design folder name, what makes it brand-coupled (proper noun? sub-brand vertical?), what the section actually does irrespective of the brand, a generic alternative that fits the archetype.
+**Naming formula = feature + layout.** Build the name from WHAT the section does (the content/feature archetype — featured products, newsletter signup, testimonials, bundle builder, image + text, logo wall) joined with HOW it's arranged (the layout — grid, carousel, tabs, collage, marquee, split, masonry, slideshow, accordion). Kebab-case, lowercase. Worked names: `product-grid`, `featured-products-tabs`, `testimonial-carousel`, `hero-collage`, `bundle-tabs`, `logo-marquee`, `image-text-split`. **Read the design first** and propose real feature+layout names — never `{N}`-style placeholders.
 
-**Good — fires when the agent has identified a real generic alternative:**
+**Observe first:** the design folder name, what the section actually does (feature), how it's laid out (layout), and whether the current name is brand-coupled (proper noun / sub-brand vertical) or already feature-generic.
 
-> *Question:* "Design folder is `hero-pet` but the section is just a centered hero with corner decoration shapes — nothing pet-specific in the architecture. Ship it under a generic name so the parfum / kids verticals can reuse the same archetype later, or keep `hero-pet` to mirror the design folder 1:1?"
+**Good — brand-coupled folder, real alternatives proposed:**
+
+> *Question:* "Design folder is `hero-pet`, but the section is just a centered hero with corner decoration shapes — nothing pet-specific in the architecture. Feature = hero; layout = collage of decoration shapes. What should it ship as? (rename touches 5-7 files, so it's worth deciding now)"
 >
 > *Options:*
-> - **`hero-collage`** — Feature-generic, reusable for sibling sub-brand heroes; rename later would touch 5-7 files (Recommended)
-> - **`hero-pet`** — Keeps design ↔ section mapping; pick if you'd rather rename later than commit to a generic now
+> - **`hero-collage`** — feature (hero) + layout (collage); reusable across sibling sub-brands (Recommended)
+> - **`hero-pet`** — keeps the design ↔ section 1:1 mapping
+> - **`hero-split`** — if you read the layout as a split rather than a collage
+>
+> *(harness adds "Other" for a custom name)*
+
+**Good — already-clean folder, Keep is recommended (Q1 still fires):**
+
+> *Question:* "Folder is `subscribe` — a single-render newsletter signup, centered. Already feature-generic. Keep it, or standardize to a feature+layout name?"
+>
+> *Options:*
+> - **`Keep \`subscribe\``** — clean and conventional already (Recommended)
+> - **`newsletter-signup`** — more explicit feature naming if you're standardizing
 
 **Anti-example (rigid template):** "Section name: keep `hero-pet` or rename to a feature-generic alternative?"
-*Doesn't show the agent grasped why the folder name is brand-coupled or what alternative actually fits. User has to do that work.*
+*Doesn't show the agent grasped the feature/layout or proposed real names. The user has to do that work.*
 
 ### Q2 — Block strategy
 
@@ -223,12 +242,12 @@ When user picks **SCSS-first**, the agent MUST invoke `Skill(scss)` before autho
 
 ## Worked examples — how the protocol behaves end-to-end
 
-### Example 1 — `subscribe` (1 question — Q7 only)
+### Example 1 — `subscribe` (2 questions — Q1 + Q7)
 
 Step 1 survey output: design `design/src/sections/subscribe/subscribe.html`. Name = feature-generic. Single render (no blocks). No commerce. No animation. Cream bg → `background-1` obvious.
 
 Evaluation:
-- Q1 name: SKIP (name is clean)
+- **Q1 name: FIRE** (always) — `subscribe` is already clean, so lead with `Keep \`subscribe\`` (Recommended), offer `newsletter-signup` as a standardize alternative
 - Q2 blocks: SKIP (no repeating units)
 - Q3 data: SKIP (no commerce)
 - Q4 animation: SKIP (static)
@@ -236,14 +255,14 @@ Evaluation:
 - Q6 scheme: SKIP (design clearly cream)
 - **Q7 CSS strategy: FIRE** (always fires)
 
-→ COUNT(Q1-Q6) = 0. **Single inline AskUserQuestion for Q7 only.** Proceed to Step 2 after answer.
+→ COUNT(Q2-Q6, Q8) = 0. **Batch Q1 + Q7 into one AskUserQuestion call** (the two-question minimum). Proceed to Step 2 after answer.
 
-### Example 2 — `hero-pet` → `hero-collage` (4 questions: 3 batched + Q7)
+### Example 2 — `hero-pet` → `hero-collage` (4 questions: Q1 + Q2 + Q4 + Q7)
 
 Step 1 survey output: design `design/src/sections/hero-pet/hero-pet.html`. Name brand-coupled. 6 decorative shapes positioned absolutely with parallax. Centered content. Pet-brand theme but the section concept is generic.
 
 Evaluation:
-- Q1 name: **ASK** — `hero-pet` is brand-coupled, generic alternative `hero-collage` viable
+- **Q1 name: FIRE** (always) — `hero-pet` is brand-coupled; feature (hero) + layout (collage) → propose `hero-collage` / `hero-split`, with Keep `hero-pet`
 - Q2 blocks: **ASK** — 6 decoration units, inline vs theme block matters
 - Q3 data: SKIP (no commerce)
 - Q4 animation: **ASK** — parallax drift on shapes, non-trivial to port
@@ -251,14 +270,14 @@ Evaluation:
 - Q6 scheme: SKIP (design clearly cream)
 - **Q7 CSS strategy: FIRE** (always fires; design SCSS has heavy CSS-variable-driven positioning → likely XO-CSS-first with non-trivial tier-3 sidecar)
 
-→ COUNT(Q1-Q6) = 3 + Q7 = 4 questions total. **Batch 4 questions into one AskUserQuestion call.**
+→ COUNT(Q2-Q6, Q8) = 2 (Q2, Q4); + Q1 + Q7 = 4 questions total — fits one AskUserQuestion call. **Batch all 4.**
 
-### Example 3 — `featured-products` (3 questions: 2 batched + Q7)
+### Example 3 — `featured-products` (5 questions: Q1 + Q3 + Q5 + Q8 + Q7 → two calls)
 
 Step 1 survey output: design `design/src/sections/featured-products/featured-products.html`. Name fine. Grid of 4 product cards. No animation. Two existing src snippets candidate: `featured-collection` (single-collection iterate) and `featured-products` (no existing section but matches the design's name).
 
 Evaluation:
-- Q1 name: SKIP (already feature-generic)
+- **Q1 name: FIRE** (always) — `featured-products` already feature-generic (feature + layout = `featured-products-grid`); lead with Keep `featured-products` (Recommended), offer `featured-products-grid`
 - Q2 blocks: SKIP (no merchant-added blocks, the 4 cards come from collection data)
 - Q3 data: **ASK** — single collection picker vs collection_list vs per-card block override → 3 real options
 - Q4 animation: SKIP (static)
@@ -266,6 +285,8 @@ Evaluation:
 - Q6 scheme: SKIP (design clearly cream)
 - **Q7 CSS strategy: FIRE** (always fires; product-card visual archetype matters here)
 - Q8 layout: **ASK** — 4 identical product cards in a raw-CSS 2×2 grid → recommend the `layout` system (merchant could flip grid↔carousel). SKIP only if items aren't a homogeneous collection
+
+→ COUNT(Q2-Q6, Q8) = 3 (Q3, Q5, Q8); + Q1 + Q7 = 5 questions total. That's over the 4-per-call cap, so **split into two AskUserQuestion calls** — e.g. call 1 = Q1 + Q3 + Q5 + Q7 (the name + reuse-shaping batch), call 2 = Q8 (layout) — rather than dropping any.
 
 → COUNT(conditional: Q3, Q5, Q8) = 3 + Q7 = 4 questions total. **Batch 4 questions.**
 
