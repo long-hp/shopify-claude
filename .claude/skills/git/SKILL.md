@@ -21,6 +21,7 @@ Commit captain for the base-3 Shopify theme port. One scope per commit. Surfaces
 /git --all                 # batch — multi-select scopes, commit each sequentially
 /git subscribe             # fuzzy-match scope (e.g. matches `sections/subscribe`)
 /git .claude/planner       # exact scope
+/git design                # nested-repo mode — commit the design/ clone (see end)
 ```
 
 ---
@@ -31,7 +32,7 @@ Commit captain for the base-3 Shopify theme port. One scope per commit. Surfaces
 - ✅ Always `AskUserQuestion` before staging or committing — surface, don't assume
 - ✅ Commit message follows the project's existing style — verify by reading recent `git log`
 - ✅ Always specific paths to `git add` — never `-A` / `.`
-- ❌ NEVER `git push`
+- ❌ NEVER `git push` — **sole exception:** `/git design` mode may push the nested `design/` repo, and only after an explicit per-push confirmation (see "`/git design`" section). The parent theme repo is still never pushed.
 - ❌ NEVER `git commit --amend` (always create a NEW commit)
 - ❌ NEVER `--no-verify` / `--no-gpg-sign` (no hook bypass)
 - ❌ NEVER auto-commit secret files (`.env`, `*.key`, `credentials*`, `*.pem`)
@@ -93,7 +94,7 @@ Match each dirty path against this table top-down. First match wins.
 | `src/scripts/...`                                        | `scripts`                 |
 | `theme-config/...`                                       | `theme-config`            |
 | `shopify/...`                                            | `shopify-build` ⚠         |
-| `design/...`                                             | `design`                  |
+| `design/...`                                             | — (gitignored nested repo; never in the parent scan — commit it via `/git design`, see end) |
 | Root files: `CLAUDE.md`, `package.json`, `package-lock.json`, `vite.config.js`, `.mcp.json`, `.gitignore`, `tsconfig*.json`, `xo-css.vite-plugin.js`, `xo-css.vscode.cjs` | `root` |
 
 The `⚠` marker on `shopify-build` signals a pre-commit warning (Step 7) because compiled output usually shouldn't be committed.
@@ -341,6 +342,32 @@ Run `git push` when ready.
 ```
 
 Always remind the user to `git push` manually — the skill never pushes.
+
+---
+
+## `/git design` — nested design repo mode
+
+`design/` is a **separate git clone** (the upstream Folio HTML template) with its own `.git`, and it's **gitignored by the parent repo** — so its files never show up in the parent's `git status` and the normal `/git` flow can never touch them. `/git design` is the dedicated path for committing inside that nested repo.
+
+**The only change is the target: every git command runs with `git -C design …`** (status, log, diff, add, commit, push) so it operates on design's own index/worktree, never the parent's. Everything else — the whole pipeline (Step 0 pre-flight → Step 1 scan → Step 3 pick → Step 4 diff → Step 5 type → Step 6 message → Step 7 gates → Step 8 preview → Step 9 stage+commit), one-scope-per-commit, preview+confirm, the post-stage leak-check, multi-select for batch, no AI co-author trailer — applies unchanged.
+
+Entry pre-flight: confirm `design/.git` exists; if not, bail with "`design/` is not a nested git repo here" and stop.
+
+**Design scope map** (use this instead of the Step 2 table for this mode):
+
+| Path prefix (inside `design/`)       | Scope name          |
+| ------------------------------------ | ------------------- |
+| `src/components/<name>/...`          | `components/<name>` |
+| `src/sections/<name>/...`            | `sections/<name>`   |
+| `blueprint-*.md`                     | `blueprints`        |
+| `design-system.md` (+ top-level docs)| `docs`              |
+| `package.json`, `.gitignore`         | `root`              |
+| `xo-design/...`                      | `xo-design`         |
+| anything else                        | its top-level dir   |
+
+**Message style follows the DESIGN repo's own convention, not the parent's.** Verify with `git -C design log --oneline -10` (the same "match existing style" rule). Design uses `<type>: <summary>` with **no `(scope)` parenthesis** — name the area in the summary prose instead. E.g. `feat: button hover restyle + signature bump`, `chore: cascade blueprint copy edits`. Leak-check prefix is relative to the design repo root.
+
+**Push step (after the selected scopes are committed).** Push is allowed here but never automatic. Show how far ahead local is — `git -C design status -sb` (or `git -C design log --oneline @{u}..`) — then **ask**: "Push design repo to `origin/<branch>`?" Only on an explicit yes run `git -C design push` (never `--force`). If declined, remind the user they can `git -C design push` later. This is the one carve-out from the never-push rule, and it still always asks.
 
 ---
 
