@@ -1,7 +1,7 @@
 ---
 name: design-sync
 argument-hint: "(no args — diff design HEAD vs baseline)"
-description: Use when the design source has been updated and the ported Shopify theme may now be behind. The design/ folder is a SEPARATE git repo (cloned from the upstream Folio HTML template) versioned via design/package.json; pulling a new version advances its git HEAD. This skill diffs the current design HEAD against the last synced baseline (recorded in .agent-state/DESIGN-SYNC.md), buckets what changed (tokens/foundation, sections, components, pages), cross-references PROGRESS.md to tell which changed units are ALREADY PORTED (need re-sync) vs net-new (backlog), produces a severity-sorted impact table, and proposes batched re-port work handed off to the design-to-liquid skill. Invoke this for "/design-sync", "I pulled a new design", "design có bản mới", "design update / cập nhật design", "check design changes", "đồng bộ design", "what changed in the design since last time", "design version bumped", "re-port what's stale", or at the start of a session right after a `git -C design pull`. Do NOT use it to port a brand-new section from scratch (that's design-to-liquid) or to track src-side progress (that's planner) — design-sync is the bridge that turns "design moved forward" into "here's the re-port worklist". After it reports, it updates the DESIGN-SYNC.md baseline ledger only once the user confirms a batch is actually synced.
+description: Use when the design source has been updated and the ported Shopify theme may now be behind. The design/ folder is a SEPARATE git repo (cloned from the upstream Folio HTML template) versioned via design/package.json; pulling a new version advances its git HEAD. This skill diffs the current design HEAD against the last synced baseline (recorded in .agent-state/DESIGN-SYNC.md), buckets what changed (tokens/foundation, sections, components, pages), cross-references PROGRESS.md to find which changed units are ALREADY PORTED, and reports ONLY those as a re-sync worklist (a severity-sorted impact table + batched re-port handoffs to design-to-liquid). Net-new / not-yet-ported changes are out of scope — surfaced as a one-line count footnote only, never as work (porting new units is design-to-liquid / planner territory). Invoke this for "/design-sync", "I pulled a new design", "design có bản mới", "design update / cập nhật design", "check design changes", "đồng bộ design", "what changed in the design since last time", "design version bumped", "re-port what's stale", or at the start of a session right after a `git -C design pull`. Do NOT use it to port a brand-new section from scratch (that's design-to-liquid) or to track src-side progress (that's planner) — design-sync is the bridge that turns "design moved forward" into "here's the re-port worklist". After it reports, it updates the DESIGN-SYNC.md baseline ledger only once the user confirms a batch is actually synced.
 ---
 
 # design-sync
@@ -16,8 +16,8 @@ This skill closes that loop:
 
 1. A **baseline** — the design version + commit the port is currently aligned to — lives in `.agent-state/DESIGN-SYNC.md`.
 2. The engine diffs `baseline..HEAD` and buckets every changed file.
-3. **You** (the judgment layer) resolve which changed units are *already ported* and therefore need re-syncing, vs net-new work for the backlog.
-4. You produce an impact table and propose **batches** that hand off to `design-to-liquid`.
+3. **You** (the judgment layer) find the changed units that are *already ported* — that is the re-sync set. Changes to not-yet-ported units are counted and set aside, not worked here.
+4. You produce an impact table of the re-sync set and propose **batches** that hand off to `design-to-liquid`.
 5. After the user confirms a batch is synced, you advance the ledger.
 
 The `version` in `package.json` is the human-facing headline ("are we behind?"). The git commits are the precise diff. Use both — and never trust version alone, because a pull can land many commits under the same version number.
@@ -53,7 +53,7 @@ The engine reads `design/package.json` version + HEAD, the ledger baseline, runs
 | Tier | Meaning | Default action |
 | --- | --- | --- |
 | 🔴 **Foundation** | `src/styles/` tokens, `design-system.md`, `head.html`, fonts | Re-check **Step 0 token mapping** — a variable change ripples to every ported section |
-| 🟠 **Units** | sections & components | Re-port if already ported; else backlog |
+| 🟠 **Units** | sections & components | Re-sync if already ported; **ignore if not yet ported** (counted in the footnote, not worked here) |
 | 🟡 **Pages/blueprints** | page templates, `blueprint-*.md` | Informational — tells you which sections appear where |
 | ⚫ **Infra** | build config, lockfiles | Usually ignore |
 
@@ -74,33 +74,33 @@ The engine can't know whether a design unit was ported, because the mapping is f
 3. Classify:
    - **Ported + modified** → *candidate* re-sync. Before calling it actionable, read the actual design diff (`git -C design diff <baseline>..HEAD -- src/sections/<unit>/`) and confirm the change touches the **ported surface**, not a sibling. A "modified" flag is often a sub-brand block being moved out (e.g. `header` showed up modified, but the diff was just `header-sound` announce CSS relocating to a new `announcement-bar-sound` section — the ported Folio base header was untouched). Only the part of the diff that hits the ported surface is real re-sync work; capture the resolved `src/` path for it.
    - **Ported + removed/renamed** → the src version may now be orphaned or misnamed; flag for the user (don't delete anything yourself — AGENT.md surgical-changes rule).
-   - **Not ported + modified** → no rework; just note the design moved (PLAN/INVENTORY will catch it as backlog).
-   - **New** → backlog item for a future `design-to-liquid` port, not a re-sync.
+   - **Not yet ported (modified or new)** → **out of scope.** Just tally it for the footnote — don't spend judgment resolving these deeply. Porting a not-yet-ported unit is `design-to-liquid` / `planner` work, not a re-sync.
 
-Keep this fast — you don't need to open every section's diff, only enough to confidently bucket ported vs not. When a unit is clearly new (0 mentions, `added`), trust it.
+Keep this fast — you only need enough to confidently bucket *ported* vs *not yet ported*. Stop resolving a unit the moment it's confidently NOT ported (0 mentions + `added` → trust it, tally, move on); spend your judgment only on the ported set.
 
 ## Step 3 — Build the impact table
 
-Present a single table the user can act on, ordered foundation-first then by ported-and-modified:
+Present a single table the user can act on — **only foundation (🔴) + already-ported-and-modified/removed (✅) rows.** Order foundation-first, then ported-and-modified. Not-yet-ported changes never become rows here.
 
 ```
 | # | Design change | Type | Ported? | src target | Action | Batch |
 | - | ------------- | ---- | ------- | ---------- | ------ | ----- |
 | 1 | src/styles/base/variables.scss | 🔴 token | foundation | preset-1.js | Re-check Step 0 mapping | A |
 | 2 | header (modified)              | 🟠 sect | ✅ ported | groups/headers/header/ | Re-sync SCSS/settings | A |
-| 3 | hero (modified)               | 🟠 sect | ⏳ next-in-plan | (image-banner audit) | Fold into planned port | B |
-| 4 | plp-bento (added)             | 🟠 sect | ❌ new | — | Backlog (design-to-liquid) | — |
+| 3 | footer (modified)             | 🟠 sect | ✅ ported | groups/footers/footer/ | Re-sync SCSS | A |
+
+_(N changed units are not yet ported — out of scope for re-sync; not listed.)_
 ```
 
-Always include the new design commit subjects (from the engine) above the table — the commit messages are the best summary of intent ("sound stack — 4 new sections + violet palette").
+Always include the new design commit subjects (from the engine) above the table — the commit messages are the best summary of intent ("sound stack — 4 new sections + violet palette"). The footnote's count is just the tally from Step 2; never enumerate the not-yet-ported units.
 
 ## Step 4 — Propose batches + hand off
 
 Group the actionable rows into **batches** the user can take one at a time, and recommend the handoff:
 
 - **Batch ordering:** foundation (🔴) first — re-mapping a moved token may auto-fix downstream sections via the CSS-variable cascade, shrinking the rest of the list. Then ported-and-modified sections grouped by area (header/footer chrome together, PLP family together, etc.).
-- For each batch, name the concrete next command: *"Run `/design-to-liquid` on `<unit>` — it's an override re-sync of `src/groups/headers/header/`"* (or for new units: *"…a fresh port"*). Respect the group override ladder vs section port ladder per AGENT.md.
-- Offer to write the new/backlog units into `PLAN.md` (via the `planner` skill) so they're not lost.
+- For each batch, name the concrete next command: *"Run `/design-to-liquid` on `<unit>` — it's an override re-sync of `src/groups/headers/header/`"*. Respect the group override ladder vs section port ladder per AGENT.md. (Batches are re-sync of already-ported units only.)
+- The not-yet-ported changes are out of scope here. If the user wants them tracked as future ports, that's `planner` (PLAN.md backlog) / `design-to-liquid` (the actual port) — point them there rather than folding it into the re-sync worklist.
 
 Do **not** start porting yourself — design-sync's job ends at the worklist + handoff. The user picks a batch; `design-to-liquid` does the actual re-port.
 
