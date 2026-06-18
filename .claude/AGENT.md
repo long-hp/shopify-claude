@@ -124,6 +124,7 @@ Why: PROGRESS is the next-agent's read-on-start orientation for "where are we in
 | **`git`**              | `/git` — scoped commit workflow. Scans dirty files, groups by scope (skill / section / snippet / config / state / root), drafts Conventional-Commit message, light pre-commit gates, commits ONE scope per invocation after preview. Never pushes or amends. |
 | `extract-icon`         | Sync Lucide SVG content into `src/snippets/icons/icon-*.liquid` from `unpkg.com/lucide-static@latest`. Triggered by "update icons", "sync icons", "lucide → snippet". |
 | `system-upgrade`       | Check, evaluate + **upgrade** the `.claude/` system (skills, AGENT.md, hooks, MCP, validators) + Shopify-platform drift. Distribution-repo aware. **Skill-targeted changes are delegated to `skill-creator`.** Triggered by `/system-upgrade`, `/system-audit`, "kiểm tra hệ thống", "nâng cấp hệ thống", "check .claude". |
+| `shopify-watch`        | `/shopify-watch` — read-only **radar** for what's NEW in Shopify relevant to **theme** dev (changelog / Editions / themes-Liquid docs / Dawn-Horizon releases). Filters out app/Functions/extension-runtime news (THEME-not-APP), cites a source URL + date per item, emits a grouped digest, then **hands actionable items to `/system-upgrade`**. Stateless (asks for a "since" anchor), edits nothing. Triggered by "Shopify có gì mới", "Shopify changelog", "Editions mới", "what's new in Shopify themes". |
 
 ## Validators
 
