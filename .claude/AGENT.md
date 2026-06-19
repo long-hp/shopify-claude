@@ -284,6 +284,17 @@ Headings can wrap a single sensorial word in `<em>` to flip to the subheading fo
 
 `inline_richtext` settings only accept inline tags (`em`, `strong`, `b`, `i`, `u`, `a`, `span`, `sup`, `sub`). For line breaks or paragraphs, use `richtext` (top-level `<p>`/`<ul>`/`<ol>`/`<h1>-<h6>`) — never `<br>`.
 
+### `rte` wrapper class on richtext output
+
+Any Liquid tag that **outputs a `richtext` or `inline_richtext` schema field** must carry the `rte` class on the wrapper, alongside its BEM class:
+
+```liquid
+<div class="xo-xxx__text rte">{{ section.settings.text }}</div>
+<h2 class="xo-xxx__heading rte">{{ section.settings.heading }}</h2>
+```
+
+The styling already ships globally — `.rte { … }` in `src/styles/base/content.scss` (heading/paragraph/list spacing) and `src/snippets/_base/text/text.global.scss` exempts `.rte` from font-size normalization. The class is what tells the cascade "this is editor-authored rich text", so the spacing rules apply. Omitting it leaves richtext rendering unstyled. Applies to both `section.settings.*` and `block.settings.*`; plain `text`/`url`/`image` settings do NOT get `rte`.
+
 ## End of session
 
 Append one entry to `.agent-state/PROGRESS.md` at the TOP of the file (under the title). See `planner` skill's `progress-protocol.md` for the entry template (Goal / Done / Decisions / Files touched / Open / next session).
