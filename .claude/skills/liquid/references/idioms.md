@@ -199,6 +199,17 @@ The italic-emphasis pattern (`<em>` flips to subheading font):
 
 Implemented globally in `src/styles/base/content.scss` — `h* em → var(--font-sub-family)`.
 
+### `rte` class on richtext output wrappers
+
+Any Liquid tag that **outputs a `richtext` or `inline_richtext` field** must carry the `rte` class on its wrapper, next to the BEM class:
+
+```liquid
+<div class="xo-xxx__text rte">{{ section.settings.text }}</div>
+<h2 class="xo-xxx__heading rte">{{ section.settings.heading }}</h2>
+```
+
+The `rte` class is what activates the rich-text spacing cascade — `.rte { … }` in `src/styles/base/content.scss` styles heading/paragraph/list spacing, and `src/snippets/_base/text/text.global.scss` exempts `.rte` from font-size normalization. Omit it and the richtext output renders unstyled. Applies to both `section.settings.*` and `block.settings.*`. Plain `text` / `url` / `image` settings do **not** get `rte` — only richtext-family fields. (Canonical rule: AGENT.md → "### `rte` wrapper class on richtext output".)
+
 ## 10. Settings access patterns
 
 Always read settings into local vars in the prelude, then reference the local:
