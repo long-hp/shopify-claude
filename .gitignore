@@ -18,3 +18,10 @@ npm-debug.log*
 
 # Playwright MCP output (screenshots + editor-qa scratch snapshots)
 .playwright-mcp/
+
+# Python (skill-script bytecode)
+__pycache__/
+*.pyc
+
+# Lighthouse audit reports (lighthouse-audit skill throwaway output)
+.lighthouse/
