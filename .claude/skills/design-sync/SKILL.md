@@ -1,7 +1,7 @@
 ---
 name: design-sync
 argument-hint: "(no args — diff design HEAD vs baseline)"
-description: Use when the design source has been updated and the ported Shopify theme may now be behind. The design/ folder is a SEPARATE git repo (cloned from the upstream Folio HTML template) versioned via design/package.json; pulling a new version advances its git HEAD. This skill diffs the current design HEAD against the last synced baseline (recorded in .agent-state/DESIGN-SYNC.md), buckets what changed (tokens/foundation, sections, components, pages), cross-references PROGRESS.md to find which changed units are ALREADY PORTED, and reports ONLY those as a re-sync worklist (a severity-sorted impact table + batched re-port handoffs to design-to-liquid). Net-new sections (added in the design but never ported) are auto-registered into the PLAN.md backlog as ⚪ pending items, deduped against existing backlog and already-ported units so re-runs never duplicate — the actual porting still belongs to design-to-liquid, not here. Invoke this for "/design-sync", "I pulled a new design", "design có bản mới", "design update / cập nhật design", "check design changes", "đồng bộ design", "what changed in the design since last time", "design version bumped", "re-port what's stale", or at the start of a session right after a `git -C design pull`. Do NOT use it to port a brand-new section from scratch (that's design-to-liquid) or to track src-side progress (that's planner) — design-sync is the bridge that turns "design moved forward" into "here's the re-port worklist". After it reports, it updates the DESIGN-SYNC.md baseline ledger only once the user confirms a batch is actually synced.
+description: Use when the design source has been updated and the ported Shopify theme may now be behind. The design/ folder is a SEPARATE git repo (cloned from the upstream Folio HTML template) versioned via design/package.json; pulling a new version advances its git HEAD. As its pre-flight step this skill now brings the design clone up to date ITSELF (git fetch → show incoming commits → confirm → `git -C design pull --ff-only`), rather than assuming you pre-pulled. Then it diffs the current design HEAD against the last synced baseline (recorded in .agent-state/DESIGN-SYNC.md), buckets what changed (tokens/foundation, sections, components, pages), cross-references PROGRESS.md to find which changed units are ALREADY PORTED, and reports ONLY those as a re-sync worklist (a severity-sorted impact table + batched re-port handoffs to design-to-liquid). Net-new sections (added in the design but never ported) are auto-registered into the PLAN.md backlog as ⚪ pending items, deduped against existing backlog and already-ported units so re-runs never duplicate — the actual porting still belongs to design-to-liquid, not here. Invoke this for "/design-sync", "I pulled a new design", "design có bản mới", "design update / cập nhật design", "check design changes", "đồng bộ design", "what changed in the design since last time", "design version bumped", "re-port what's stale", or at the start of a session right after a `git -C design pull`. Do NOT use it to port a brand-new section from scratch (that's design-to-liquid) or to track src-side progress (that's planner) — design-sync is the bridge that turns "design moved forward" into "here's the re-port worklist". After it reports, it updates the DESIGN-SYNC.md baseline ledger only once the user confirms a batch is actually synced.
 ---
 
 # design-sync
@@ -21,6 +21,29 @@ This skill closes that loop:
 5. After the user confirms a batch is synced, you advance the ledger.
 
 The `version` in `package.json` is the human-facing headline ("are we behind?"). The git commits are the precise diff. Use both — and never trust version alone, because a pull can land many commits under the same version number.
+
+## Pre-flight — Pull the design repo first (always, before everything)
+
+design-sync diffs against `design`'s **current HEAD**, so a stale local clone poisons the whole report: it would diff an old HEAD, miss the very changes you ran this for, and can falsely declare "up to date". So before anything else — before bootstrap, before the engine — bring the clone current.
+
+The project's `git` skill is **commit-only by design and never pulls**, so design-sync does the pull itself with a plain command. **Do not invoke the `git` skill for this.**
+
+1. Fetch and check whether the local clone is behind its upstream:
+   ```bash
+   git -C design fetch
+   git -C design status -sb | head -1        # e.g. "## main...origin/main [behind 7]"
+   git -C design log --oneline HEAD..@{u}     # the incoming commit subjects, if any
+   ```
+2. **Already current** (no incoming commits) → say "design clone already current at `<short HEAD>`" and continue to Step 0 (bootstrap) / Step 1 (engine) with this HEAD.
+3. **Behind** → show the incoming commit subjects (the commit messages are the best summary of what changed — the same signal Step 3 leans on) and **ask the user before pulling**. On confirm:
+   ```bash
+   git -C design pull --ff-only
+   ```
+
+> [!IMPORTANT]
+> Pull with `--ff-only` so a pull that isn't a clean fast-forward **fails loudly** instead of silently creating a merge commit in a repo you don't own. If it fails (local edits in the design tree, or diverged history), **stop and hand it back to the user** to resolve manually (inspect, or `git -C design stash`) — never force, reset, or merge the design clone yourself (AGENT.md: surgical changes; don't touch what you don't own).
+
+After a successful pull, design HEAD has advanced — that advanced HEAD is what the engine diffs `baseline..HEAD` against in Step 1, and what the Step 0 clean-slate guardrail (don't baseline on top of unported drift) then evaluates. That's the intent: every downstream step reasons about the freshest design.
 
 ## Step 0 — Bootstrap (only when no ledger exists yet)
 
