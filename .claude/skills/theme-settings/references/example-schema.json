@@ -1,0 +1,185 @@
+{
+  "title": "Customize the theme",
+  "button": {
+    "label": "Customize",
+    "position": "bottom-right"
+  },
+  "drawer": {
+    "overlay": false,
+    "lockScroll": false
+  },
+  "footer": {
+    "reset": "Reset",
+    "apply": "Apply"
+  },
+  "cache": 600,
+  "groups": [
+    {
+      "title": "Header",
+      "fields": [
+        {
+          "type": "section-swap",
+          "id": "header",
+          "label": "Header style",
+          "target": {
+            "match": "__header"
+          },
+          "options": [
+            {
+              "label": "Default",
+              "value": "default",
+              "image": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20160%20100%22%3E%3Crect%20width%3D%22160%22%20height%3D%22100%22%20fill%3D%22%23f4f1ea%22%2F%3E%3Crect%20x%3D%2212%22%20y%3D%2212%22%20width%3D%2224%22%20height%3D%229%22%20rx%3D%222%22%20fill%3D%22%231f1f1f%22%2F%3E%3Cg%20fill%3D%22%231f1f1f%22%3E%3Crect%20x%3D%22100%22%20y%3D%2215%22%20width%3D%2212%22%20height%3D%223%22%20rx%3D%221.5%22%2F%3E%3Crect%20x%3D%22116%22%20y%3D%2215%22%20width%3D%2212%22%20height%3D%223%22%20rx%3D%221.5%22%2F%3E%3Crect%20x%3D%22132%22%20y%3D%2215%22%20width%3D%2212%22%20height%3D%223%22%20rx%3D%221.5%22%2F%3E%3C%2Fg%3E%3Crect%20x%3D%2212%22%20y%3D%2234%22%20width%3D%22136%22%20height%3D%2230%22%20rx%3D%223%22%20fill%3D%22%23ddd6c8%22%2F%3E%3Crect%20x%3D%2212%22%20y%3D%2270%22%20width%3D%2242%22%20height%3D%2222%22%20rx%3D%223%22%20fill%3D%22%23e8e2d6%22%2F%3E%3Crect%20x%3D%2259%22%20y%3D%2270%22%20width%3D%2242%22%20height%3D%2222%22%20rx%3D%223%22%20fill%3D%22%23e8e2d6%22%2F%3E%3Crect%20x%3D%22106%22%20y%3D%2270%22%20width%3D%2242%22%20height%3D%2222%22%20rx%3D%223%22%20fill%3D%22%23e8e2d6%22%2F%3E%3C%2Fsvg%3E"
+            },
+            {
+              "label": "Centered logo",
+              "value": "header-center",
+              "section": "header-showcase-center",
+              "image": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20160%20100%22%3E%3Crect%20width%3D%22160%22%20height%3D%22100%22%20fill%3D%22%23f4f1ea%22%2F%3E%3Cg%20fill%3D%22%231f1f1f%22%3E%3Crect%20x%3D%2212%22%20y%3D%2215%22%20width%3D%2212%22%20height%3D%223%22%20rx%3D%221.5%22%2F%3E%3Crect%20x%3D%2228%22%20y%3D%2215%22%20width%3D%2212%22%20height%3D%223%22%20rx%3D%221.5%22%2F%3E%3Crect%20x%3D%2244%22%20y%3D%2215%22%20width%3D%2212%22%20height%3D%223%22%20rx%3D%221.5%22%2F%3E%3C%2Fg%3E%3Crect%20x%3D%2268%22%20y%3D%2212%22%20width%3D%2224%22%20height%3D%229%22%20rx%3D%222%22%20fill%3D%22%231f1f1f%22%2F%3E%3Ccircle%20cx%3D%22140%22%20cy%3D%2216.5%22%20r%3D%224%22%20fill%3D%22%231f1f1f%22%2F%3E%3Crect%20x%3D%2212%22%20y%3D%2234%22%20width%3D%22136%22%20height%3D%2230%22%20rx%3D%223%22%20fill%3D%22%23ddd6c8%22%2F%3E%3Crect%20x%3D%2212%22%20y%3D%2270%22%20width%3D%2242%22%20height%3D%2222%22%20rx%3D%223%22%20fill%3D%22%23e8e2d6%22%2F%3E%3Crect%20x%3D%2259%22%20y%3D%2270%22%20width%3D%2242%22%20height%3D%2222%22%20rx%3D%223%22%20fill%3D%22%23e8e2d6%22%2F%3E%3Crect%20x%3D%22106%22%20y%3D%2270%22%20width%3D%2242%22%20height%3D%2222%22%20rx%3D%223%22%20fill%3D%22%23e8e2d6%22%2F%3E%3C%2Fsvg%3E"
+            },
+            {
+              "label": "Minimal",
+              "value": "header-minimal",
+              "section": "header-showcase-minimal",
+              "image": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20160%20100%22%3E%3Crect%20width%3D%22160%22%20height%3D%22100%22%20fill%3D%22%23f4f1ea%22%2F%3E%3Crect%20x%3D%2212%22%20y%3D%2212%22%20width%3D%2224%22%20height%3D%229%22%20rx%3D%222%22%20fill%3D%22%231f1f1f%22%2F%3E%3Cg%20fill%3D%22%231f1f1f%22%3E%3Crect%20x%3D%22128%22%20y%3D%2212%22%20width%3D%2220%22%20height%3D%222.5%22%20rx%3D%221%22%2F%3E%3Crect%20x%3D%22128%22%20y%3D%2218%22%20width%3D%2220%22%20height%3D%222.5%22%20rx%3D%221%22%2F%3E%3C%2Fg%3E%3Crect%20x%3D%2212%22%20y%3D%2234%22%20width%3D%22136%22%20height%3D%2230%22%20rx%3D%223%22%20fill%3D%22%23ddd6c8%22%2F%3E%3Crect%20x%3D%2212%22%20y%3D%2270%22%20width%3D%2242%22%20height%3D%2222%22%20rx%3D%223%22%20fill%3D%22%23e8e2d6%22%2F%3E%3Crect%20x%3D%2259%22%20y%3D%2270%22%20width%3D%2242%22%20height%3D%2222%22%20rx%3D%223%22%20fill%3D%22%23e8e2d6%22%2F%3E%3Crect%20x%3D%22106%22%20y%3D%2270%22%20width%3D%2242%22%20height%3D%2222%22%20rx%3D%223%22%20fill%3D%22%23e8e2d6%22%2F%3E%3C%2Fsvg%3E"
+            }
+          ]
+        },
+        {
+          "type": "visibility",
+          "id": "announcement",
+          "label": "Announcement bar",
+          "target": {
+            "match": "__announcement-bar"
+          }
+        }
+      ]
+    },
+    {
+      "title": "Footer",
+      "open": false,
+      "fields": [
+        {
+          "type": "section-swap",
+          "id": "footer",
+          "label": "Footer style",
+          "target": {
+            "match": "__footer"
+          },
+          "options": [
+            {
+              "label": "Default",
+              "value": "default",
+              "image": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20160%20100%22%3E%3Crect%20width%3D%22160%22%20height%3D%22100%22%20fill%3D%22%23f4f1ea%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%2262%22%20width%3D%22160%22%20height%3D%2238%22%20fill%3D%22%23e3ddd0%22%2F%3E%3Cg%20fill%3D%22%239b9384%22%3E%3Crect%20x%3D%2212%22%20y%3D%2272%22%20width%3D%2230%22%20height%3D%223%22%2F%3E%3Crect%20x%3D%2212%22%20y%3D%2280%22%20width%3D%2222%22%20height%3D%223%22%2F%3E%3Crect%20x%3D%2262%22%20y%3D%2272%22%20width%3D%2230%22%20height%3D%223%22%2F%3E%3Crect%20x%3D%2262%22%20y%3D%2280%22%20width%3D%2222%22%20height%3D%223%22%2F%3E%3Crect%20x%3D%22112%22%20y%3D%2272%22%20width%3D%2230%22%20height%3D%223%22%2F%3E%3Crect%20x%3D%22112%22%20y%3D%2280%22%20width%3D%2222%22%20height%3D%223%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E"
+            },
+            {
+              "label": "Dark",
+              "value": "footer-dark",
+              "section": "footer-showcase-dark",
+              "image": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20160%20100%22%3E%3Crect%20width%3D%22160%22%20height%3D%22100%22%20fill%3D%22%23f4f1ea%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%2256%22%20width%3D%22160%22%20height%3D%2244%22%20fill%3D%22%231f1f1f%22%2F%3E%3Cg%20fill%3D%22%238a8578%22%3E%3Crect%20x%3D%2212%22%20y%3D%2268%22%20width%3D%2230%22%20height%3D%223%22%2F%3E%3Crect%20x%3D%2212%22%20y%3D%2276%22%20width%3D%2222%22%20height%3D%223%22%2F%3E%3Crect%20x%3D%2262%22%20y%3D%2268%22%20width%3D%2230%22%20height%3D%223%22%2F%3E%3Crect%20x%3D%2262%22%20y%3D%2276%22%20width%3D%2222%22%20height%3D%223%22%2F%3E%3Crect%20x%3D%22112%22%20y%3D%2268%22%20width%3D%2230%22%20height%3D%223%22%2F%3E%3Crect%20x%3D%22112%22%20y%3D%2276%22%20width%3D%2222%22%20height%3D%223%22%2F%3E%3C%2Fg%3E%3Crect%20x%3D%2212%22%20y%3D%2288%22%20width%3D%22136%22%20height%3D%221%22%20fill%3D%22%23444%22%2F%3E%3C%2Fsvg%3E"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Colors",
+      "fields": [
+        {
+          "type": "color",
+          "id": "primary",
+          "label": "Accent",
+          "var": "--color-primary",
+          "target": ":root",
+          "default": "#1f1f1f",
+          "swatches": [
+            "#1f1f1f",
+            "#c0392b",
+            "#2e6b4f",
+            "#2f4aa0"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Layout",
+      "fields": [
+        {
+          "type": "select",
+          "id": "radius",
+          "label": "Corner radius",
+          "target": "body",
+          "class": "xo-border-radius--",
+          "default": "xs",
+          "options": [
+            {
+              "label": "None",
+              "value": "none"
+            },
+            {
+              "label": "XS",
+              "value": "xs"
+            },
+            {
+              "label": "SM",
+              "value": "sm"
+            },
+            {
+              "label": "MD",
+              "value": "md"
+            },
+            {
+              "label": "LG",
+              "value": "lg"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Presets",
+      "fields": [
+        {
+          "type": "preset",
+          "options": [
+            {
+              "label": "Minimal",
+              "values": {
+                "header": "header-minimal",
+                "primary": "#1f1f1f",
+                "radius": "none"
+              },
+              "image": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20160%20100%22%3E%3Crect%20width%3D%22160%22%20height%3D%22100%22%20fill%3D%22%23f3eee6%22%2F%3E%3Ccircle%20cx%3D%22120%22%20cy%3D%2230%22%20r%3D%2244%22%20fill%3D%22%23d9d9d9%22%2F%3E%3Ccircle%20cx%3D%2240%22%20cy%3D%2290%22%20r%3D%2240%22%20fill%3D%22%231f1f1f%22%2F%3E%3C%2Fsvg%3E"
+            },
+            {
+              "label": "Bold",
+              "values": {
+                "header": "header-center",
+                "primary": "#c0392b",
+                "radius": "lg"
+              },
+              "image": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20160%20100%22%3E%3Crect%20width%3D%22160%22%20height%3D%22100%22%20fill%3D%22%23f3eee6%22%2F%3E%3Ccircle%20cx%3D%22120%22%20cy%3D%2230%22%20r%3D%2244%22%20fill%3D%22%23ff7a9a%22%2F%3E%3Ccircle%20cx%3D%2240%22%20cy%3D%2290%22%20r%3D%2240%22%20fill%3D%22%23ffb547%22%2F%3E%3C%2Fsvg%3E"
+            }
+          ]
+        },
+        {
+          "type": "link",
+          "label": "Other demos",
+          "target": "_blank",
+          "keep": true,
+          "options": [
+            {
+              "label": "Preset 1 — Fashion",
+              "url": "https://example-preset1.myshopify.com",
+              "image": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20160%20100%22%3E%3Crect%20width%3D%22160%22%20height%3D%22100%22%20fill%3D%22%23f3eee6%22%2F%3E%3Ccircle%20cx%3D%22120%22%20cy%3D%2230%22%20r%3D%2244%22%20fill%3D%22%23b8a8ff%22%2F%3E%3Ccircle%20cx%3D%2240%22%20cy%3D%2290%22%20r%3D%2240%22%20fill%3D%22%23ece6ff%22%2F%3E%3C%2Fsvg%3E"
+            },
+            {
+              "label": "Preset 2 — Beauty",
+              "url": "https://example-preset2.myshopify.com",
+              "image": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20160%20100%22%3E%3Crect%20width%3D%22160%22%20height%3D%22100%22%20fill%3D%22%23f3eee6%22%2F%3E%3Ccircle%20cx%3D%22120%22%20cy%3D%2230%22%20r%3D%2244%22%20fill%3D%22%234fb48c%22%2F%3E%3Ccircle%20cx%3D%2240%22%20cy%3D%2290%22%20r%3D%2240%22%20fill%3D%22%23e2ff8a%22%2F%3E%3C%2Fsvg%3E"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
