@@ -44,6 +44,7 @@ Agent `.claude/` đứng giữa: đọc design, viết Liquid, validate schema, 
 | `liquid-doc` | `{% comment %} @param … %}` doc block | Header file snippet |
 | `motion` | Authority wiring motion: `xo-animate` / `xo-parallax-scroll` / `xo-parallax-hover` (+ gotcha `xo-start/xo-end`) | `/motion`, "thêm animation/parallax" |
 | `web-components` | Viết MỚI web component `xo-*` (TS, `XoComponent`) vào `src/scripts/` | `/web-components`, "tạo web component" |
+| `theme-settings` | Cài và cấu hình bảng tuỳ biến `<xo-theme-settings>` cho store demo (đổi section qua `?section_id=`, màu, bo góc, preset, link) sau khi rà toàn bộ theme | `/theme-settings`, "bảng tuỳ biến demo", "cho khách thử đổi header/footer" |
 | `git` | Commit theo scope; sau commit hỏi Push / Commit tiếp / Dừng (Step 11); push chỉ khi bạn chọn, không `--force`, không amend | User gõ `/git` |
 | `extract-icon` | Sync SVG Lucide vào `src/snippets/icons/icon-*.liquid` | "update icons", "sync icons", "lucide → snippet" |
 | `system-upgrade` | Check, đánh giá + **nâng cấp** hệ `.claude/` (việc động tới skill delegate cho `skill-creator`) | `/system-upgrade`, `/system-audit`, "kiểm tra hệ thống", "nâng cấp hệ thống" |

@@ -44,6 +44,7 @@ The `.claude/` agent sits in the middle: it reads the design, writes Liquid, val
 | `liquid-doc` | `{% comment %} @param … %}` doc blocks | Top of a snippet file |
 | `motion` | Authority on wiring motion: `xo-animate` / `xo-parallax-scroll` / `xo-parallax-hover` (+ the `xo-start/xo-end` gotcha) | `/motion`, "add animation/parallax" |
 | `web-components` | Author a NEW `xo-*` web component (TS, `XoComponent`) into `src/scripts/` | `/web-components`, "create a web component" |
+| `theme-settings` | Install + configure the `<xo-theme-settings>` demo-store customizer (section swaps via `?section_id=`, colors, radius, presets, links) after auditing the theme | `/theme-settings`, "demo customizer", "style switcher panel" |
 | `git` | Scoped commits; after committing asks Push / commit next / stop (Step 11); push only on your explicit choice, never `--force`, no amend | User types `/git` |
 | `extract-icon` | Sync Lucide SVGs into `src/snippets/icons/icon-*.liquid` | "update icons", "sync icons", "lucide → snippet" |
 | `system-upgrade` | Check, evaluate + **upgrade** the `.claude/` system (skill changes delegated to `skill-creator`) | `/system-upgrade`, `/system-audit`, "check .claude", "nâng cấp hệ thống" |
