@@ -78,6 +78,15 @@ Details:
 
 ## 4. Behaviour
 
+**One schema for the whole theme.** A field is shown only when its target exists on the current page:
+`section-swap` / `visibility` / section-target fields need the section (and `inner`, if given); selector targets need
+a matching element (`:root` / `html` / `body` always match); a `preset` shows if any of its `values` refers to an
+available field; `link` always shows. Groups with no available field are hidden; a page with none shows a short
+note. Availability is re-checked when the drawer opens and after a swap. Applied values persist across pages and are
+applied only where their target exists (a header choice applies on every page with a header, a hero choice only
+where a hero exists). Apply merges — values for fields absent on this page are kept. So write ONE schema covering
+every page's sections; don't make per-template schemas.
+
 | Action | Page | Stored | Drawer | Event |
 |---|---|---|---|---|
 | Change an option | updates live (preview) | not saved | open | `change` |

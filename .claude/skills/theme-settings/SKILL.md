@@ -80,6 +80,9 @@ audit and state the choices.
    - Colors/ranges target the CSS variables the theme actually reads.
    - Thumbnails: use inline SVG data URIs (see step 4); keep `image` keys so the user can swap in screenshots later.
    - Every id unique; preset `values` reference existing ids.
+   - Write ONE schema for the whole theme (home, product, collection…): fields whose target isn't on the current page
+     are hidden automatically and applied values carry across pages. So include page-specific sections (hero, product
+     gallery…) with a `target` that only matches on those pages, not a schema per template.
 3. **Liquid hook**: a small snippet (follow the theme's snippet convention — consult the `snippet` skill) that
    captures the JSON and outputs
    `<xo-theme-settings xo-schema="{{ schema_json | strip_newlines | escape }}"></xo-theme-settings>`,

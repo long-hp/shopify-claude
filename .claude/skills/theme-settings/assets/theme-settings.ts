@@ -48,6 +48,10 @@
  *   - X, Esc, bấm lại nút mở, close(): như "Đặt lại" rồi đóng ( đi chung 1 chỗ: sự kiện đóng của xo-modal ).
  *   Mở lại sau khi Áp dụng: thấy đúng giá trị đã áp dụng; Đặt lại / X từ đó về theme gốc.
  *   footer.apply: false thì không còn cách lưu.
+ * Dùng chung cả theme: field có target không có trên trang ( trang sản phẩm không có hero → ẩn field Hero ) bị ẩn, nhóm
+ *   hết field thì ẩn, không còn gì thì hiện 1 dòng thông báo. Tính lại mỗi lần mở drawer và sau khi đổi section ( chỉ là
+ *   vài lần querySelector, không làm khi cuộn ). Giá trị đã Áp dụng giữ qua mọi trang: chỉ áp ở trang có target, field
+ *   vắng mặt vẫn được giữ và lưu lại khi Áp dụng ở trang khác; preset áp field có mặt, lưu cả field vắng mặt.
  * Sự kiện ( trên phần tử, bubbles ): xo:theme-settings:change { id, value } mỗi lần đổi ( xem thử );
  *   xo:theme-settings:apply { values }; xo:theme-settings:reset.
  * Sửa schema ( tác giả ): ?xo-theme-settings-edit hoặc attribute xo-editor → thêm tab "Schema".
@@ -421,6 +425,7 @@ const CSS_PANEL = `
 & .xo-ts__group-body{display:grid;gap:20px;padding:2px 0 20px}
 & .xo-ts__label{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin:0 0 8px;font-weight:550}
 & .xo-ts__info{margin:6px 0 0;color:var(--mu);font-size:12.5px}
+& .xo-ts__empty{margin:24px 0;color:var(--mu);font-size:13px;text-align:center}
 & .xo-ts__err{margin:8px 0 0;color:#b42318;font-size:13px}
 & .xo-ts__opts{display:flex;flex-wrap:wrap;gap:8px}
 & .xo-ts__opts--img{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
@@ -558,6 +563,14 @@ export class ThemeSettings extends XoComponent<Props> {
 
   private isOpen = false;
 
+  /** Mục đã lưu không thuộc schema hiện tại: giữ nguyên khi Áp dụng ( không làm mất ) */
+  private extra: Dict = {};
+
+  /** Nhóm trong drawer + id các field của nó ( ẩn nhóm khi không còn field nào dùng được ) */
+  private groupEls: { el: HTMLElement; ids: string[] }[] = [];
+
+  private emptyEl: HTMLElement | null = null;
+
   /** Lần đóng sắp tới không bỏ thay đổi ( Áp dụng; xo-modal tự đóng khi đọc lại tuỳ chọn ) */
   private keep = false;
 
@@ -670,6 +683,7 @@ export class ThemeSettings extends XoComponent<Props> {
   /** Đặt lại: theme về như cũ ( section gốc, biến CSS / attribute / class gốc ), xoá bản đã lưu. Không đóng drawer */
   public reset() {
     this.values = {};
+    this.extra = {};
     storage.removeItem(this.key());
     this.errs.clear();
     this.restoreAll();
@@ -720,10 +734,13 @@ export class ThemeSettings extends XoComponent<Props> {
         }
         if (VALUED.includes(f.type)) this.defaults[f.id] = this.defaultOf(f);
       });
+      if (first) this.extra = {};
+      // Giá trị của mọi field ( kể cả field có target không có trên trang này: chỉ áp ở trang có, vẫn giữ để lưu lại )
       Object.keys(raw).forEach((id) => {
         const f = this.fields.get(id);
         const v = f && VALUED.includes(f.type) ? coerce(f, raw[id]) : undefined;
         if (v !== undefined) this.values[id] = v;
+        else if (first && !f) this.extra[id] = raw[id];
       });
       this.applyLocal();
       // Section đổi được tải ngay ( song song ); đã có trong sessionStorage thì thay luôn, không chờ
@@ -737,7 +754,7 @@ export class ThemeSettings extends XoComponent<Props> {
   }
 
   private save() {
-    storage.setItem(this.key(), JSON.stringify(this.values));
+    storage.setItem(this.key(), JSON.stringify({ ...this.extra, ...this.values }));
   }
 
   private val(id: string): Value {
@@ -790,6 +807,63 @@ export class ThemeSettings extends XoComponent<Props> {
    * Phần tử đích của field. target object ( hoặc visibility ): section đang hiện của field ( đổi section thì là phần tử
    * mới ), có inner thì các phần tử khớp inner bên trong. target chuỗi: selector trên cả trang ( mặc định :root )
    */
+  /**
+   * Field dùng được trên trang này không ( theo target có mặt, tự động, không cần khai báo trang ):
+   * section-swap / visibility: section tìm được; target section + inner: section và inner đều có; target selector: có
+   * phần tử khớp ( :root / html / body luôn có ); preset: có ít nhất 1 field trong values dùng được; link: luôn có
+   */
+  private available(f: Field): boolean {
+    if (f.type === 'link') return true;
+    if (f.type === 'preset') {
+      return f.options.some((o) => Object.keys(o.values || {}).some((k) => {
+        const x = this.fields.get(k);
+        return !!x && x.type !== 'preset' && this.available(x);
+      }));
+    }
+    if (this.slots.has(f.id)) {
+      const slot = this.slots.get(f.id);
+      if (!slot || !slot.current.isConnected) return false;
+      return f.type === 'section-swap' || f.type === 'visibility' || this.els(f).length > 0;
+    }
+    return this.targets(f.target as string).length > 0;
+  }
+
+  /**
+   * Tìm lại section chưa có / đã bị gỡ ( template khác, section thêm bớt ), áp giá trị cho field vừa dùng được, rồi ẩn
+   * field / nhóm không dùng được ( hết field thì hiện dòng thông báo ). Chạy khi mở drawer và sau khi đổi section
+   */
+  private refresh() {
+    const found = new Map<Element, Slot>();
+    this.slots.forEach((slot) => slot && found.set(slot.current, slot).set(slot.original, slot));
+    this.fields.forEach((f) => {
+      if (!this.slots.has(f.id)) return;
+      const slot = this.slots.get(f.id);
+      if (slot && slot.current.isConnected) return;
+      const el = this.resolve(typeof f.target === 'string' ? { selector: f.target } : (f.target as Target));
+      // Không tìm thấy: giữ slot cũ ( section bị gỡ tạm, gắn lại đúng phần tử đó thì dùng được lại )
+      if (!el) return;
+      const next = found.get(el) || { original: el, current: el, token: 0, busy: 0 };
+      found.set(el, next);
+      this.slots.set(f.id, next);
+      if (!(f.id in this.values)) return;
+      if (f.type === 'section-swap') this.swap(f, this.values[f.id] as string).catch(() => {});
+      else this.applyField(f, this.values[f.id]);
+    });
+    if (!this.dw) return;
+    let any = false;
+    this.groupEls.forEach(({ el, ids }) => {
+      let n = 0;
+      ids.forEach((id) => {
+        const ok = this.available(this.fields.get(id)!);
+        this.boxes.get(id)!.hidden = !ok;
+        if (ok) n++;
+      });
+      el.hidden = !n;
+      any = any || n > 0;
+    });
+    if (this.emptyEl) this.emptyEl.hidden = any || !this.schema || !this.groupEls.length;
+  }
+
   private els(f: Field): HTMLElement[] {
     if (!this.slots.has(f.id)) return this.targets(f.target as string);
     const slot = this.slots.get(f.id);
@@ -983,6 +1057,7 @@ export class ThemeSettings extends XoComponent<Props> {
     if (reapply) this.applyLocal();
     if (fresh) this.runScripts(next);
     fire(next, 'shopify:section:load');
+    if (reapply) this.refresh();
   }
 
   /** Script chèn bằng innerHTML không chạy: tạo lại thẻ. Script src đã có trên trang thì không nạp lại */
@@ -1079,6 +1154,8 @@ export class ThemeSettings extends XoComponent<Props> {
         api.on('open', this.modalName, () => {
           this.isOpen = true;
           this.build();
+          // Trang có thể đã đổi ( section thêm / bớt ): tính lại field nào dùng được
+          this.refresh();
           this.fab.setAttribute('aria-expanded', 'true');
         }),
         api.on('close', this.modalName, () => {
@@ -1185,6 +1262,7 @@ export class ThemeSettings extends XoComponent<Props> {
     if (this.footEl && this.footEl !== foot) this.footEl.replaceWith(foot);
     this.footEl = foot;
     this.boxes.clear();
+    this.groupEls = [];
     this.ui.replaceChildren();
     if (this.override()) {
       this.ui.append(
@@ -1206,8 +1284,7 @@ export class ThemeSettings extends XoComponent<Props> {
       const name = `${this.modalName}-${run}-${i}`;
       const open = g.open !== false;
       const cid = uid();
-      this.ui.append(
-        h(
+      const group = h(
           'div',
           { class: 'xo-ts__group' },
           h(
@@ -1216,9 +1293,13 @@ export class ThemeSettings extends XoComponent<Props> {
             h('button', { type: 'button', class: 'xo-ts__group-btn', 'aria-expanded': String(open), 'aria-controls': cid, text: g.title || 'Tuỳ chọn' }),
           ),
           h('xo-collapse' as 'div', { 'xo-name': name, id: cid, 'xo-duration': 250, 'xo-active': open }, h('div', { class: 'xo-ts__group-body' }, ...g.fields.map((f) => this.renderField(f)))),
-        ),
-      );
+        );
+      this.groupEls.push({ el: group, ids: g.fields.map((f) => f.id) });
+      this.ui.append(group);
     });
+    this.emptyEl = h('p', { class: 'xo-ts__empty', hidden: true, text: 'Trang này không có tuỳ chọn nào để đổi. Mở bảng ở trang khác ( trang chủ, sản phẩm… ) để thấy thêm.' });
+    this.ui.append(this.emptyEl);
+    this.refresh();
     this.dw!.querySelectorAll<HTMLButtonElement>('.xo-ts__foot [data-act=reset],.xo-ts__foot [data-act=apply]').forEach((b) => (b.disabled = !this.schema));
     this.sync();
   }
@@ -1227,19 +1308,18 @@ export class ThemeSettings extends XoComponent<Props> {
     const lid = uid();
     const name = f.label || f.id;
     const box = h('div', { class: 'xo-ts__field' });
-    const missing = this.slots.has(f.id) && !this.slots.get(f.id);
     if (f.type === 'toggle' || f.type === 'visibility') {
-      box.append(h('label', { class: 'xo-ts__switch' }, h('span', { text: name }), h('input', { type: 'checkbox', role: 'switch', 'data-f': f.id, disabled: missing })));
+      box.append(h('label', { class: 'xo-ts__switch' }, h('span', { text: name }), h('input', { type: 'checkbox', role: 'switch', 'data-f': f.id })));
     } else if (f.type === 'range') {
       const iid = uid();
       box.append(
         h('label', { class: 'xo-ts__label', for: iid }, name, h('output', { class: 'xo-ts__code', for: iid })),
-        h('input', { type: 'range', class: 'xo-ts__range', id: iid, min: f.min, max: f.max, step: f.step, 'data-f': f.id, disabled: missing }),
+        h('input', { type: 'range', class: 'xo-ts__range', id: iid, min: f.min, max: f.max, step: f.step, 'data-f': f.id }),
       );
     } else if (f.type === 'color') {
       const sws = (f.swatches || []).map((c, i) =>
         HEX.test(c)
-          ? h('button', { type: 'button', class: 'xo-ts__swatch', style: `--c:${c}`, 'aria-label': c, 'aria-pressed': 'false', 'data-f': f.id, 'data-o': i, 'data-sw': '', disabled: missing })
+          ? h('button', { type: 'button', class: 'xo-ts__swatch', style: `--c:${c}`, 'aria-label': c, 'aria-pressed': 'false', 'data-f': f.id, 'data-o': i, 'data-sw': '' })
           : null,
       );
       box.append(
@@ -1248,23 +1328,22 @@ export class ThemeSettings extends XoComponent<Props> {
           'div',
           { class: 'xo-ts__swatches', role: 'group', 'aria-labelledby': lid },
           ...sws,
-          h('input', { type: 'color', class: 'xo-ts__color', 'aria-label': `${name}: màu khác`, 'data-f': f.id, disabled: missing }),
+          h('input', { type: 'color', class: 'xo-ts__color', 'aria-label': `${name}: màu khác`, 'data-f': f.id }),
         ),
       );
     } else {
       const list = h('div', { class: f.options.some((o) => o.image) ? 'xo-ts__opts xo-ts__opts--img' : 'xo-ts__opts', role: 'group', 'aria-labelledby': f.label ? lid : null });
-      f.options.forEach((o, i) => list.append(this.renderOption(f, o, i, missing)));
+      f.options.forEach((o, i) => list.append(this.renderOption(f, o, i)));
       if (f.label) box.append(h('div', { class: 'xo-ts__label', id: lid, text: f.label }));
       box.append(list);
     }
     if (f.info) box.append(h('p', { class: 'xo-ts__info', text: f.info }));
-    if (missing) box.append(h('p', { class: 'xo-ts__info', text: 'Trang này không có section này.' }));
     box.append(h('p', { class: 'xo-ts__err', role: 'alert', hidden: true }));
     this.boxes.set(f.id, box);
     return box;
   }
 
-  private renderOption(f: Field, o: Opt, i: number, missing: boolean) {
+  private renderOption(f: Field, o: Opt, i: number) {
     const kids = [o.image ? h('img', { src: o.image, alt: '', loading: 'lazy', decoding: 'async' }) : null, h('span', { text: o.label || o.value })];
     if (f.type === 'link') {
       const u = safeUrl(o.url)!;
@@ -1274,7 +1353,7 @@ export class ThemeSettings extends XoComponent<Props> {
       const blank = f.target === '_blank';
       return h('a', { class: 'xo-ts__opt', href: u.href, target: blank ? '_blank' : null, rel: blank ? 'noopener' : null, 'aria-current': current ? 'true' : null }, ...kids, current && h('small', { text: 'Đang xem' }));
     }
-    return h('button', { type: 'button', class: 'xo-ts__opt', 'data-f': f.id, 'data-o': i, 'aria-pressed': 'false', disabled: missing }, ...kids);
+    return h('button', { type: 'button', class: 'xo-ts__opt', 'data-f': f.id, 'data-o': i, 'aria-pressed': 'false' }, ...kids);
   }
 
   /**
