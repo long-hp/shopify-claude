@@ -8,8 +8,9 @@ Goal: collect facts so every schema entry points at something real. Read files w
 ```bash
 grep -n "xo-critical\|xo-webcomponents\|main.ts\|vite-tag\|</body>" src/layout/theme.liquid
 grep -rn "xo-webcomponents" src/snippets --include=*.liquid -l | head   # scripts may be loaded from a snippet (e.g. 'scripts')
-sed -n 1,40p src/main.ts                      # Vite entry: the component is imported here (import "./theme-settings";)
-ls src/theme-settings.ts 2>/dev/null           # already installed?
+sed -n 1,40p src/main.ts                      # Vite entry: the LOADER is imported here (import "./theme-settings-loader";)
+ls src/theme-settings*.ts 2>/dev/null          # already installed?
+grep -rn "import.meta.glob" src/utils src/main.ts | head   # folders auto-imported eagerly — the component must NOT live there
 ```
 
 Need: `xo-critical` (provides `@xo/utils` / `window.XotinyUtils`) and `xo-webcomponents` JS **and** CSS (xo-modal,

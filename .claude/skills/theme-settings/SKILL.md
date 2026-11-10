@@ -45,7 +45,7 @@ Read `references/theme-audit.md` and run its checklist. Minimum to know before s
   `xo-border-radius--{none|xs|sm|md|lg}` on **body** or **html** — check `layout/theme.liquid`), color scheme CSS
   variables (where `--color-*` are emitted, e.g. a `xotiny-theme` snippet), typography variables, button style
   classes, dark mode attribute.
-- Whether a `<xo-theme-settings>`, `src/theme-settings.ts` or an `import "./theme-settings"` in `src/main.ts` already exists (then you are editing, not
+- Whether a `<xo-theme-settings>`, `src/theme-settings*.ts` or an `import "./theme-settings-loader"` (or an old eager `import "./theme-settings"` — replace it with the loader) in `src/main.ts` already exists (then you are editing, not
   installing).
 
 Summarize what you found to the user in 5–10 lines before asking anything.
@@ -68,10 +68,17 @@ audit and state the choices.
 
 ### 3. Write the files
 
-1. **Component**: copy `assets/theme-settings.ts` to **`src/theme-settings.ts`** (directly in the theme's `src/`, not
-   `src/scripts/`), then import it in **`src/main.ts`** with one line next to the other imports:
-   `import "./theme-settings";`. Skip the copy if an identical/newer file is already there, and never add the import
-   twice. Don't edit the component to fit a schema — the schema adapts to the theme, not the component.
+1. **Component (lazy-loaded)**: copy both files directly into the theme's `src/` (not `src/scripts/`, which is
+   auto-imported by `import.meta.glob` and would make the component eager again):
+   - `assets/theme-settings-loader.ts` → `src/theme-settings-loader.ts` (~0.8 KB gzip, the only part in the main bundle);
+   - `assets/theme-settings.ts` → `src/theme-settings.ts` (~15 KB gzip, loaded by the loader via `import()` → Vite
+     makes it a separate chunk).
+   Then import only the loader in **`src/main.ts`**: `import "./theme-settings-loader";` (never also import
+   `./theme-settings` statically, never add the import twice). Skip copies that are already identical/newer. Don't
+   edit the component to fit a schema — the schema adapts to the theme.
+   Why: the panel then costs nothing at page load (Lighthouse/LCP/TBT unaffected); the chunk loads when the visitor
+   hovers/clicks the button, when the browser is idle ~3.5 s after load, or right away if the visitor has applied
+   values saved. It does not load for bots (PSI/GTmetrix) or in the theme editor.
 2. **Schema**: build it per `references/schema-reference.md`. Rules that matter most:
    - `section-swap.target`: prefer `match` (id suffix like `"__header"`, or a class on `.shopify-section`), then
      `selector`, `index` last (fragile).
@@ -84,8 +91,9 @@ audit and state the choices.
      are hidden automatically and applied values carry across pages. So include page-specific sections (hero, product
      gallery…) with a `target` that only matches on those pages, not a schema per template.
 3. **Liquid hook**: a small snippet (follow the theme's snippet convention — consult the `snippet` skill) that
-   captures the JSON and outputs
-   `<xo-theme-settings xo-schema="{{ schema_json | strip_newlines | escape }}"></xo-theme-settings>`,
+   captures the JSON and outputs `<xo-theme-settings xo-schema="{{ schema_json | strip_newlines | escape }}"
+   xo-preload="idle">` containing the **static button + critical CSS** from `assets/static-button.liquid` (shows
+   instantly without JS, fixed size → no CLS; the component adopts that exact button when it loads),
    rendered from `layout/theme.liquid` just before `</body>` inside the agreed guard. `| escape` is mandatory —
    unescaped JSON quotes truncate the attribute. Template: `references/liquid-hook.md`.
 
@@ -125,4 +133,6 @@ swapped header on the live demo — the panel fires the event, but those scripts
 | `references/example-schema.json` | A complete working schema to adapt (do not paste blindly) |
 | `scripts/thumb.mjs` | Step 4 — SVG thumbnail data URIs |
 | `scripts/validate-schema.mjs` | Step 5 — schema + theme cross-check |
-| `assets/theme-settings.ts` | The component source to install |
+| `assets/theme-settings-loader.ts` | Tiny loader imported from `src/main.ts` |
+| `assets/theme-settings.ts` | The component (lazy chunk) |
+| `assets/static-button.liquid` | Static button + critical CSS to paste inside the element |

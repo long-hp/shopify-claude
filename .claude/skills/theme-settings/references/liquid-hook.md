@@ -17,8 +17,19 @@ in this theme family — consult the `snippet` skill for the exact shape and the
   "groups": [ … ]
 }
 {%- endcapture -%}
-<xo-theme-settings xo-schema="{{ xo_ts_schema | strip_newlines | escape }}"></xo-theme-settings>
+{%- liquid
+  assign xo_ts_label = 'Customize'
+  assign xo_ts_position = 'bottom-right'
+-%}
+<xo-theme-settings xo-schema="{{ xo_ts_schema | strip_newlines | escape }}" xo-preload="idle">
+  {%- comment -%} paste assets/static-button.liquid here (static <style> + <button class="xo-ts-fab">) {%- endcomment -%}
+</xo-theme-settings>
 ```
+
+`xo-preload`: `idle` (default — load on button hover/focus/click or when idle ~3.5 s after `load`), `interaction`
+(only on hover/focus/click), `eager` (right away). Visitors with saved (applied) values always load right away so
+their swaps apply early. Keep `xo_ts_label` / `xo_ts_position` in sync with `button.label` / `button.position` in the
+schema so the static button and the loaded panel match (no visual jump).
 
 `| escape` is mandatory: the JSON contains double quotes that would otherwise end the attribute. `strip_newlines`
 keeps the attribute on one line. SVG data URIs are already percent-encoded by `scripts/thumb.mjs`, so they survive
@@ -43,5 +54,5 @@ Option A needs a checkbox in the theme's global settings (e.g. a new entry in `s
 `schema` skill): `{ "type": "checkbox", "id": "theme_settings_enable", "label": "Show demo customizer", "default": false }`.
 
 The element must come after the `xo-critical` / `xo-webcomponents` scripts are referenced (they are in `<head>` in
-this theme), and the component must be in the bundle: `src/theme-settings.ts` imported from `src/main.ts`
-(`import "./theme-settings";`).
+this theme), and the loader must be in the bundle: `src/theme-settings-loader.ts` imported from `src/main.ts`
+(`import "./theme-settings-loader";`); `src/theme-settings.ts` sits next to it (lazy chunk, not imported statically).

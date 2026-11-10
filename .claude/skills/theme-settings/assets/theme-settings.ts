@@ -2,7 +2,11 @@
  * <xo-theme-settings> — bảng "Tuỳ biến giao diện" nổi, chỉ đặt trên store DEMO của tác giả theme. Khách thử:
  * đổi header / footer / section bất kỳ sang bản khác, đổi màu / kích thước, ẩn hiện section, nhảy sang bộ demo khác.
  *
- * 1 file tự chứa ( chép thẳng vào theme ), không import động. Cần:
+ * Tải sau: main import theme-settings-loader.ts ( vài trăm byte ), file này là chunk riêng do bộ nạp import() khi cần
+ * ( lúc rảnh / khi chạm nút / ngay nếu có bản lưu ). Nút tĩnh <button class="xo-ts-fab"> + <style> của snippet có sẵn trong
+ * <xo-theme-settings>: component dùng lại nút đó ( bọc vào xo-modal-trigger, giữ <style> ), không có thì tự tạo.
+ * Attribute xo-open-on-load ( bộ nạp đặt khi khách bấm trước lúc chunk về ): mở drawer khi xo-modal sẵn sàng.
+ * File tự chứa ( chép thẳng vào theme cùng bộ nạp ), không import động bên trong. Cần:
  *   - xo-critical.js: @xo/utils ( window.XotinyUtils );
  *   - xo-webcomponents ( JS + CSS ): xo-modal / xo-modal-trigger / window.xoModal ( nút + drawer ), xo-collapse /
  *     xo-collapse-trigger ( nhóm đóng mở ). Thiếu xo-modal thì console.error, không im lặng.
@@ -388,6 +392,7 @@ xo-theme-settings .xo-ts-fab[aria-expanded=true][data-pos$=right]{right:calc(min
 xo-theme-settings .xo-ts-fab[aria-expanded=true][data-pos$=left]{left:calc(min(var(--xo-ts-width,380px),100vw) + 16px)}
 }
 xo-theme-settings .xo-ts-spin.xo-ts-spin{all:unset;position:fixed;z-index:var(--xo-ts-z,2147483000);width:30px;height:30px;margin:-15px 0 0 -15px;box-sizing:border-box;border:3px solid rgba(127,127,127,.3);border-top-color:var(--xo-ts-accent,#161616);border-radius:50%;animation:xo-ts-rot .8s linear infinite;pointer-events:none}
+xo-theme-settings .xo-ts-fab[aria-busy=true] svg{animation:xo-ts-rot .8s linear infinite}
 xo-theme-settings .xo-ts-spin[hidden]{display:none}
 @keyframes xo-ts-rot{to{transform:rotate(1turn)}}
 @media (prefers-reduced-motion:reduce){xo-theme-settings .xo-ts-fab.xo-ts-fab{transition:none}}
@@ -606,6 +611,20 @@ export class ThemeSettings extends XoComponent<Props> {
     }
     // xo-modal tạo sau khi đọc schema: biết drawer mở bên trái hay phải ngay từ đầu
     this.mountModal();
+    // Bộ nạp ghi nhận khách đã bấm nút trước khi component về: mở drawer khi xo-modal sẵn sàng
+    if (this.hasAttribute('xo-open-on-load')) this.openWhenReady();
+  }
+
+  /** Chờ xo-modal dựng xong ( định nghĩa + mount, có xo-modal-content ) rồi mở; tối đa ~5 giây */
+  private openWhenReady(tries = 0) {
+    const ready = window.customElements.get('xo-modal') && this.modal?.shadowRoot?.querySelector('xo-modal-content');
+    if (!ready && tries < 100 && !this.ac.signal.aborted) {
+      window.setTimeout(() => this.openWhenReady(tries + 1), 50);
+      return;
+    }
+    this.removeAttribute('xo-open-on-load');
+    this.fab.removeAttribute('aria-busy');
+    if (ready) this.open();
   }
 
   unmount() {
@@ -1113,18 +1132,26 @@ export class ThemeSettings extends XoComponent<Props> {
    */
   private renderShell() {
     const sig = { signal: this.ac.signal };
-    this.replaceChildren();
+    // Nút tĩnh do snippet in ra ( hiện trước khi JS chạy ): dùng lại, không tạo nút thứ 2. Không có thì tạo mới
+    const own = this.querySelector<HTMLButtonElement>('button.xo-ts-fab');
+    const focused = !!own && document.activeElement === own;
+    // Giữ <style> của snippet ( CSS tối thiểu của nút tĩnh )
+    this.replaceChildren(...Array.from(this.querySelectorAll(':scope > style')));
     this.modal = null;
     this.dw = null;
     this.footEl = null;
     this.ed = null;
     this.boxes.clear();
-    this.fab = h('button', { type: 'button', class: 'xo-ts-fab', 'aria-haspopup': 'dialog', 'aria-expanded': 'false' });
-    this.fab.innerHTML = ICON;
-    this.fab.append(h('span'));
+    this.fab = own || h('button', { type: 'button', class: 'xo-ts-fab' });
+    this.fab.setAttribute('aria-haspopup', 'dialog');
+    this.fab.setAttribute('aria-expanded', 'false');
+    if (!this.fab.querySelector('svg')) this.fab.insertAdjacentHTML('afterbegin', ICON);
+    if (!this.fab.querySelector(':scope > span')) this.fab.append(h('span'));
     this.spin = h('div', { class: 'xo-ts-spin', hidden: true, 'aria-hidden': 'true' });
     injectStyle('shell', CSS_SHELL);
     this.append(h('xo-modal-trigger' as 'div', { 'xo-name': this.modalName }, this.fab), this.spin);
+    // Di chuyển nút làm mất focus: trả lại
+    if (focused) this.fab.focus({ preventScroll: true });
     // Dựng nội dung trước khi trigger mở ( xo-modal-trigger chờ 1 task rồi mới đổi store )
     this.fab.addEventListener('click', () => this.modalReady() && this.build(), sig);
   }
@@ -1199,7 +1226,7 @@ export class ThemeSettings extends XoComponent<Props> {
     const b = this.schema?.button || {};
     const label = b.label ?? 'Tuỳ biến';
     const pos = POSITIONS.includes(b.position!) ? b.position! : 'bottom-right';
-    this.fab.lastElementChild!.textContent = label;
+    this.fab.querySelector(':scope > span')!.textContent = label;
     this.fab.dataset.pos = pos;
     this.fab.setAttribute('aria-label', label || 'Tuỳ biến giao diện');
     this.dw?.classList.toggle('xo-ts__drawer--left', pos.endsWith('left'));
