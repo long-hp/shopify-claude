@@ -12,6 +12,9 @@ npm-debug.log*
 
 # Claude Code local-only
 .claude/settings.local.json
+
+# Codex: generated per project from its own .mcp.json (node .codex/scripts/sync-codex-config.mjs)
+.codex/config.toml
 /design
 /src
 .editor

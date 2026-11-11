@@ -1,0 +1,18 @@
+{
+  "description": "The theme's Claude Code hooks (.claude/settings.json) run under Codex through .codex/hooks/claude-adapter.mjs; the .claude scripts stay the source of truth. Terminal: trust these once via /hooks (and again after any edit to this file). The xo-design panel runs them per thread with bypass_hook_trust. See .codex/README.md.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "^(apply_patch|Edit|Write|NotebookEdit)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "r=\"$PWD\"; while [ ! -f \"$r/.codex/hooks/claude-adapter.mjs\" ] && [ \"$r\" != / ]; do r=\"$(dirname \"$r\")\"; done; node \"$r/.codex/hooks/claude-adapter.mjs\" .claude/hooks/skill-reminder.cjs",
+            "timeout": 5,
+            "statusMessage": "Checking which theme skill applies"
+          }
+        ]
+      }
+    ]
+  }
+}

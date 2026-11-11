@@ -2,7 +2,7 @@
 
 Portable **`.claude/` agent system** for porting HTML designs into a Shopify Liquid theme with Claude Code.
 
-This repository is **only the agent layer** — AGENT.md, 13 skills, the skill-reminder hook, and settings. It is kept in its own repo for versioning, then pulled into a real Liquid project where `design/`, `src/`, and `shopify/` live.
+This repository is **only the agent layer** — AGENT.md, 13 skills, the skill-reminder hook, and settings, plus a thin bridge (`AGENTS.md` + `.codex/`) so the Codex CLI runs the same skills and hook. It is kept in its own repo for versioning, then pulled into a real Liquid project where `design/`, `src/`, and `shopify/` live.
 
 ## What's inside
 
@@ -17,6 +17,13 @@ This repository is **only the agent layer** — AGENT.md, 13 skills, the skill-r
 └── skills/             # 13 skills (planner, design-to-liquid, design-sync, polish,
                         #   liquid, snippet, schema, scss, xo-css, liquid-doc, git,
                         #   extract-icon, system-audit)
+AGENTS.md               # Codex entry file: points Codex at .claude/AGENT.md (no rules of its own)
+.codex/
+├── skills -> ../.claude/skills   # symlink: Codex lists the same skills
+├── hooks.json          # the .claude/settings.json hooks, run through the adapter below
+├── hooks/claude-adapter.mjs      # reshapes Codex hook payloads into Claude's
+├── scripts/            # sync-codex-config.mjs (.mcp.json -> config.toml), mcp-headers.mjs
+└── README.md
 ```
 
 ## Install into a Liquid project
@@ -36,6 +43,14 @@ Then point the project's `CLAUDE.md` at the agent entry file:
 ```md
 @.claude/AGENT.md
 ```
+
+For Codex, also copy `AGENTS.md` and `.codex/` to the project root (keep the `.codex/skills` symlink), then generate its MCP config from the project's `.mcp.json`:
+
+```bash
+node .codex/scripts/sync-codex-config.mjs
+```
+
+Details (trusting hooks via `/hooks`, the xo-design panel): [.codex/README.md](./.codex/README.md).
 
 On the next Claude Code session the agent reads `CLAUDE.md → .claude/AGENT.md`, then the `planner` skill seeds/reads `.agent-state/` and tells you what to do next.
 
