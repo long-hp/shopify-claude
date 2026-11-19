@@ -12,6 +12,9 @@ Ronin, Stray…), because reviewers re-test the same requirements on each submis
   item when the same requirement is flagged again (that raises its priority).
 - IDs are stable: `SF-<AREA>-<NN>`. The scanner (`scripts/scan-feedback.py`) keys its
   checks on these IDs. Keep the two in sync.
+- **The fix itself does not live here.** Each item links a `Fix playbook:` in
+  `../fixes/<ID>.md` (root cause, files, steps, verification) so this file stays a
+  checklist of requirements.
 - `Check` says how the item is verified: `static` (scanner can decide), `heuristic`
   (scanner flags candidates, a human/agent confirms), `runtime` (needs a browser —
   storefront or editor).
@@ -20,7 +23,8 @@ Sources:
 
 | Round | Theme | Date received | Raw feedback |
 |---|---|---|---|
-| R1 | Folio | 2026-11 | `themes/shopify-feedback/shopify-feedback.md` |
+| R1 | Folio | 2026-11-05 | `../feedback/R1-2026-11-05-folio.md` |
+| R2 | Folio | 2026-11-17 | `../feedback/R2-2026-11-17-folio.md` (Stage 2 Lighthouse passed) |
 
 ---
 
@@ -32,7 +36,7 @@ Sources:
 - **Requirement:** Collection and search pages support faceted filtering (availability, price, type, vendor, variant options). Filter values with `count == 0` must be disabled (not clickable). Selecting one must never lead to a "No products found" dead end. Values that are already active stay enabled so they can be unchecked.
 - **Reviewer example:** `Digital product (boolean): No (0)` was selectable.
 - **How to verify:** In the filter-value loop, look for a `value.count == 0` branch that sets `disabled` (or the component's disabled attribute). At runtime, apply a filter that makes another value drop to 0 and confirm it is still disabled **after the AJAX re-render**. Keyboard users must not be able to toggle it either (`input.disabled`, not only `pointer-events: none`).
-- **Fix pattern (Folio):** `fieldset-fields.liquid` adds `xo-disabled` on `<xo-filters-field>` when `value.count == 0 and value.active == false`. The checkbox SCSS greys it out.
+- **Fix playbook:** `fixes/SF-FILTER-01.md`
 - Docs: https://shopify.dev/docs/themes/navigation-search/filtering
 
 ### SF-I18N-01 — Every storefront string goes through `| t`
@@ -44,13 +48,24 @@ Sources:
   - Every key used with `| t` exists in the default locale, and every default-locale key exists in all other locale files.
   - Runtime: switch to a non-English locale and walk the cart drawer, cart page, product page, collection/search (filters, sort, pagination), account pages and 404.
 - Docs: https://shopify.dev/docs/themes/markets/multiple-currencies-languages#the-language-selector · https://shopify.dev/docs/themes/markets/country-language-ux
+- **Fix playbook:** `fixes/SF-I18N-01.md`
 
 ### SF-MENU-01 — Nested menus are usable at every level on mobile
-- **Seen in:** R1 Folio
+- **Seen in:** R1 Folio · R2 Folio (repeat — R1 fix incomplete)
 - **Check:** heuristic (3 levels rendered) + runtime
-- **Requirement:** Menus support 3 levels (`link.links` → `childlink.links`). The 2nd- and 3rd-level **mobile** panels must be responsive: full viewport, scrollable, not clipped or offset.
-- **How to verify:** On a 390px viewport, open a menu with 3 levels. Every panel must fill the screen, scroll on its own, and have working Back and Close buttons.
-- **Known root cause (Folio):** The nested `<xo-modal>`s were rendered inside the parent drawer. The parent's leftover `transform` and `overflow-y: auto` became the containing block for their `position: fixed`, so the panels were offset and clipped. Fix: render level-2/3 modals as siblings outside the scrolling body (or portal them), use `100dvh`, and make the modal names collision-free (`parent-child`, not `parentchild`).
+- **Requirement:** Menus support 3 levels (`link.links` → `childlink.links`). The 2nd- and 3rd-level **mobile** panels must be responsive: full viewport, scrollable, not clipped or offset. **Every item must respond to a tap**: an item without children navigates to its `url`; an item with children opens its panel, and its own URL must still be reachable (link on the label, or a "View all" / parent link inside the child panel).
+- **Reviewer example (R2):** on mobile, the 2nd-level item `2nd Level Submenu (collection page)` did nothing when tapped and never navigated to its URL.
+- **How to verify:** On a 390px viewport, open a menu with 3 levels. Every panel must fill the screen, scroll on its own, and have working Back and Close buttons. Then **tap every leaf at level 2 and 3** and confirm navigation. Statically: in the mobile-menu snippet, every level's leaf branch renders an `<a href="{{ link.url }}">`; no `preventDefault` / `role=button` trigger swallows the tap on a link that has no children; no overlay (`::before`, transparent sibling panel) sits on top of the leaf.
+- **Fix playbook:** `fixes/SF-MENU-01.md`
+- Docs: https://shopify.dev/docs/themes/navigation-search/navigation
+
+### SF-MENU-02 — Desktop dropdowns fit their labels and open level 3 beside level 2
+- **Seen in:** R2 Folio
+- **Check:** heuristic + runtime
+- **Requirement:** On desktop, the dropdown panel grows to contain its longest label (text never runs past the panel background), and the 3rd-level flyout opens **beside** the 2nd-level panel (to the right, or the left near the viewport edge / in RTL), never stacked on top of it.
+- **Reviewer example (R2):** long menu labels extended past the white dropdown box; the 3rd-level submenu opened directly over the 2nd-level panel.
+- **How to verify:** Statically, in the desktop dropdown SCSS: the panel uses `width: max-content` / `min-width` (not a fixed `width` with `white-space: nowrap` items); the level-3 list is `position: absolute; top: 0; left: 100%` (inset-inline-start) relative to its **level-2 `<li>`**, which must be `position: relative`. Runtime: build a menu with a 40+ character label and 3 levels; hover/focus each level at 1280px and near the right edge.
+- **Fix playbook:** `fixes/SF-MENU-02.md`
 - Docs: https://shopify.dev/docs/themes/navigation-search/navigation
 
 ### SF-NEWSLETTER-01 — Newsletter email input validates
@@ -59,6 +74,7 @@ Sources:
 - **Requirement:** Newsletter signup (`{% form 'customer' %}` with `contact[tags]=newsletter`) must show a validation warning for an incomplete email (e.g. `abc@`).
 - **How to verify:** The input is `type="email"` and `required`, and the form does **not** carry `novalidate` unless the JS validates and shows an error message itself. Runtime: submit `abc@` and see a visible error (native bubble or theme message), not a silent submit.
 - Docs: https://shopify.dev/docs/themes/customer-engagement/email-consent#newsletter-sign-up-form
+- **Fix playbook:** `fixes/SF-NEWSLETTER-01.md`
 
 ---
 
@@ -69,81 +85,84 @@ Sources:
 - **Check:** static
 - **Requirement:** The product page uses `cart.taxes_included` to say taxes are included when the store uses tax-inclusive prices. Usually Shopify's `products.product.include_taxes` string, plus the shipping policy link.
 - **How to verify:** `cart.taxes_included` is referenced in the product-info / price area of the product template, not only in the cart.
-- **Fix pattern (Folio):** the notice existed only in quick view. Added `{% if cart.taxes_included %}<p class="…__tax">{{ 'products.product.price.include_tax' | t }}</p>{% endif %}` inside the `price` block of `product-info-content.liquid`, inside `<xo-product-will-change>`, so it survives variant re-renders. The locale key already existed in every language.
+- **Fix playbook:** `fixes/SF-PRODUCT-01.md`
 
 ### SF-COLLECTION-01 — Product cards output unit price
 - **Seen in:** R1 Folio
 - **Check:** static
 - **Requirement:** Collection product cards render `variant.unit_price` (with `unit_price_measurement`) when the variant has one, as Dawn does.
 - **How to verify:** The product-card / card-price snippet renders a unit-price snippet. Having one only in the cart does not count.
+- **Fix playbook:** `fixes/SF-COLLECTION-01.md`
 
 ### SF-COLLECTION-02 — Product cards show compare-at price with the Sale badge
 - **Seen in:** R1 Folio
 - **Check:** static + runtime
 - **Requirement:** When a product is on sale, the card shows the strikethrough `compare_at_price` (`product.compare_at_price_max` or the variant's) next to the Sale badge.
 - **How to verify:** The card's price output has a compare-at branch (`<s>` / `<del>`), and it is not hidden by a card setting defaulted to off or by CSS.
+- **Fix playbook:** `fixes/SF-COLLECTION-02.md`
 
 ### SF-BLOG-01 — Blog template outputs `blog.title` by default
 - **Seen in:** R1 Folio
 - **Check:** heuristic
 - **Requirement:** The blog page renders `blog.title` out of the box. A hardcoded custom-content heading ("Notes from the shelf.") with the native Title toggle off fails.
 - **How to verify:** In the shipped `blog.*.json` templates, the section that outputs `blog.title` is present and its title setting is **on** by default. No demo copy replaces it.
-- **Fix pattern (Folio):** the `blog-header` section gained a `use_blog_title` checkbox (default `true`, also set in every `blog.preset-N.json`). When it is on and `blog` exists, the section passes `blog.title | escape` to `section-heading` through the new optional `title_override` param. The custom heading stays as the off-state and as the fallback outside blog templates.
+- **Fix playbook:** `fixes/SF-BLOG-01.md`
 
 ### SF-RTE-01 — RTE content is styled consistently everywhere
 - **Seen in:** R1 Folio
 - **Check:** heuristic + runtime
 - **Requirement:** `h1`–`h6`, `blockquote`, `ul` and `ol` inside rich-text output look the same in every template: article body, product description, collection description, page content, and rich-text sections.
 - **How to verify:** Every richtext output carries the shared `rte` class. No section restyles `.rte h2` etc. in a way that diverges. Runtime: put the same RTE sample in each place and compare.
+- **Fix playbook:** `fixes/SF-RTE-01.md`
 
 ### SF-ASSET-01 — No minified CSS/JS shipped (except third-party / ES6)
-- **Seen in:** R1 Folio
+- **Seen in:** R1 Folio · R2 Folio (repeat — `xo-webcomponents.min.css`, and any non-`.min` copy that is still single-line compressed, is not exempt). Folio: deferred to the build-system rework.
 - **Check:** static (on the built `shopify/assets`)
 - **Requirement:** Themes must not include minified `.css` or `.js`. Shopify minifies them itself. Exceptions are third-party libraries and ES6+ modules. Our own `xo-webcomponents.min.css` is **not** exempt and must ship unminified.
 - **How to verify:** No `*.min.css` in `assets/`. No theme-authored CSS/JS file whose lines run to thousands of characters (the vite `build.minify` output). `*.min.js` must be justified as ES6+/third-party.
-- **Fix pattern:** Ship the unminified build of the xo-webcomponents CSS under a non-`.min` name, set `build.minify: false` (or `cssMinify: false`) for theme CSS, and update the `asset_url` references in `theme.liquid`, `password.liquid` and `gift_card.liquid`.
+- **Fix playbook:** `fixes/SF-ASSET-01.md`
 
 ### SF-A11Y-01 — Everything is keyboard reachable, including dropdown navigation
 - **Seen in:** R1 Folio
 - **Check:** heuristic + runtime
 - **Requirement:** Tabbing reaches every interactive element: mega-menu/dropdown items, drawer contents, carousels, swatches, filters. Nothing is skipped.
 - **How to verify:** Flag `tabindex="-1"` on links, buttons or inputs, and clickable `div`/`span` without `role` + `tabindex="0"`. Runtime: Tab through the header (dropdowns must open on Enter/Space or focus), a product page and a collection page.
-- **Fix pattern (Folio):** Custom-element triggers (`<xo-tabs-trigger>` in notes-pyramid / tab-title) had no `tabindex`, so Tab skipped them. Add `role="button" tabindex="0"`; the theme's global keydown handler turns Enter/Space on `role=button` into a click. Sweep `<xo-*-trigger|prev|next>` without tabindex and without a focusable child.
+- **Fix playbook:** `fixes/SF-A11Y-01.md`
 
 ### SF-A11Y-02 — Visible focus state on every focusable element
 - **Seen in:** R1 Folio
 - **Check:** heuristic + runtime
 - **Requirement:** Each focusable element shows a visible focus indicator during keyboard navigation.
 - **How to verify:** Look for a global `:focus-visible` outline rule. Flag `outline: none` / `outline: 0` with no matching `:focus-visible` replacement. Runtime: Tab through links in the header, footer and cards.
-- **Fix pattern (Folio):** The global ring was `color(primary)`, invisible on primary bands/buttons (manifesto marquee, brown CTAs). Now `outline: 0.2rem solid color(foreground)` + `box-shadow: 0 0 0 0.2rem color(background)` halo in `src/styles/base/focus.scss`. Inside `overflow` scrollers draw it inset. Also drop atomic `o:none|fv` (quantity input had it).
+- **Fix playbook:** `fixes/SF-A11Y-02.md`
 
 ### SF-A11Y-03 — All images have an `alt` attribute
 - **Seen in:** R1 Folio
 - **Check:** static
 - **Requirement:** Every `<img>` has `alt`. Product images use `image.alt` or `image_tag: alt:`. Decorative images use `alt=""`.
 - **How to verify:** No raw `<img` without `alt=`. An explicit `alt: ''` on product imagery is a fail.
-- **Fix pattern (Folio):** `image` snippet fell back to the literal `'Image'`, so product thumbnails got `alt="Image"`. `media` snippet now takes `fallback_alt`; product media pass `fallback_alt: product.title` (uses `media.alt` first). Hardcoded `alt: 'Image'` in `_image-2` → `image.alt`.
+- **Fix playbook:** `fixes/SF-A11Y-03.md`
 
 ### SF-A11Y-04 — Unique input IDs with matching `<label for>`
 - **Seen in:** R1 Folio
 - **Check:** heuristic
 - **Requirement:** Every form input has a unique `id`, and its label has a `for` that matches it. Snippets rendered several times on one page (filters, quantity inputs, newsletter in both footer and popup, variant pickers) must suffix IDs with a section, block or loop id.
 - **How to verify:** Flag hardcoded literal `id="…"` on inputs inside snippets and blocks, `<label for="…">` with no matching id in the same file, and inputs with neither a label nor `aria-label`.
-- **Fix pattern (Folio):** Quantity input (PDP, cart drawer, cart page) had only `aria-label`; discount/zip field wrapped the input in a `<label>` with an empty `id`. Quantity now gets `id="Quantity-<section>-<line|variant>-<suffix>"` + visually-hidden `<label for>` (`line`/`id_suffix` params for mobile/desktop/sticky copies). `field-input` generates `Input-<section>-<block>-<name>` and the label gets `for`. Price filter `min-value`/`max-value` → `Filter-price-<section>[-drawer]-min/max`.
+- **Fix playbook:** `fixes/SF-A11Y-04.md`
 
 ### SF-A11Y-05 — Touch targets at least 24×24 CSS px
 - **Seen in:** R1 Folio
 - **Check:** runtime
 - **Requirement:** Pointer targets (icon buttons, swatches, carousel dots, close ×, quantity ±, pagination) measure at least 24×24. Inline text links are exempt.
 - **How to verify:** Look for small `width`/`height` on dots and swatches. Runtime: `getBoundingClientRect()` on all `button, a, [role=button], input[type=radio|checkbox] + label` and list any under 24px.
-- **Fix pattern (Folio):** Colour swatches were 15×15 (preset `swatches_width/height: 15`). `.xo-variant-image { min-width/min-height: 2.4rem }`; the visual chip keeps the preset size.
+- **Fix playbook:** `fixes/SF-A11Y-05.md`
 
 ### SF-A11Y-06 — Headings h1–h6 are visually distinct
 - **Seen in:** R1 Folio
 - **Check:** static (type scale) + runtime
 - **Requirement:** Each heading level differs visibly (size, weight or style) from the next.
 - **How to verify:** The heading type-scale tokens (`h1`…`h6`) have strictly decreasing sizes, with no duplicates, in every preset.
-- **Fix pattern (Folio):** `.rte` h4–h6 were 18/16/15px at one weight (≈ body). h5 now bold, h6 small bold uppercase-tracked, h4 bumped.
+- **Fix playbook:** `fixes/SF-A11Y-06.md`
 
 ---
 
@@ -154,13 +173,30 @@ Sources:
 - **Check:** static
 - **Requirement:** Header and footer section schemas declare `"limit": 1`, so a merchant cannot add or activate two at once.
 - **How to verify:** Every header-type and footer-type section in the header/footer groups has `limit: 1`. If the theme ships **several** header variants (header, header-editorial, header-overlay…), each `limit: 1` still lets two different types coexist, so confirm in the editor that only one can be added. Otherwise restrict the extra variants with `enabled_on`/`disabled_on` or collapse them into one section with a style setting.
+- **Fix playbook:** `fixes/SF-SECTION-01.md`
+
+### SF-LAYOUT-01 — Section content never overflows onto the next section
+- **Seen in:** R2 Folio
+- **Check:** heuristic + runtime
+- **Requirement:** "Clear, organized page structure & flexible layouts that look intentional." A section's box must grow with its content in every state and under every merchant setting, including after AJAX swaps (collection tabs, filters, load more, variant change). Grid rows must never be shorter than their content. Content must never overlap the row or section below.
+- **Reviewer example (R2):** in `Featured products tabs`, switching collection tabs made product cards overflow the section height and cover the heading/body of the next section (`Read the portrait, layer by layer`). The screencast shows row 2 drawn over row 1 (rows ~200px, cards ~430px) — on the page with no tab click too.
+- **How to verify:** Statically, flag fixed grid tracks (`grid-auto-rows` / `grid-template-rows` with a plain length, no `minmax(…, auto)`) and merchant settings that fix a row height (`fixed_row`, `auto_row`); also swapped-content containers with a fixed `height` / `max-height`, or JS that locks an inline `style.height` during a fetch. Runtime: turn ON every layout setting the reviewer can reach (fixed row, masonry, columns), then on desktop and 390px click every tab and confirm rows and the next section move down instead of being covered.
+- **Fix playbook:** `fixes/SF-LAYOUT-01.md`
+
+### SF-TABS-01 — Tabbed sections always have a default active tab
+- **Seen in:** R2 Folio
+- **Check:** heuristic + runtime
+- **Requirement:** A tabbed section looks and behaves the same on every page it is placed on: the first tab is active by default and its content is shown, whatever the current URL, collection or data. Empty data shows a consistent empty state for the active tab, not a no-tab-selected placeholder grid.
+- **Reviewer example (R2):** `Featured products tabs` on `collection.json` had the first tab active on `/collections/theme-test-products` but no active tab and empty placeholder cards on `/collections/empty-collection`.
+- **How to verify:** Statically, flag sections that derive the active tab from `request.path` / the current page's handle instead of the first block. Runtime: put the section on the collection template and open a collection that matches none of the tabs, plus an empty collection.
+- **Fix playbook:** `fixes/SF-TABS-01.md`
 
 ### SF-RTE-02 — Lists keep markers next to text when alignment changes
 - **Seen in:** R1 Folio
 - **Check:** heuristic + runtime
 - **Requirement:** With text alignment set to center or right, `ul`/`ol` markers must stay attached to their text, without a big gap.
 - **How to verify:** RTE/text styles set `list-style-position: inside` (or equivalent) when the container is not left-aligned. Runtime: every section with an alignment setting plus richtext gets center and right alignment and a bulleted and numbered list.
-- **Fix pattern (Folio):** `.rte ul, .rte ol { list-style-position: inside; padding-inline-start: 0 }` (the UA 40px start padding pushes a centred list off-axis) + `.rte li > p:first-child { display: inline }` (a `<p>` inside `<li>` drops the marker onto its own line) + nested lists re-indented. Every merchant-content wrapper (`page.content`, descriptions) must carry `rte`.
+- **Fix playbook:** `fixes/SF-RTE-02.md`
 
 ### SF-RTE-03 — Links inside inline richtext keep word order and flow
 - **Seen in:** R1 Folio
@@ -168,37 +204,42 @@ Sources:
 - **Requirement:** Adding a hyperlink to inline text must not reorder words (marquee: "Built to last" became "to lastBuilt") or split and displace part of the text (card heading).
 - **Root cause:** `inline_richtext` output dropped directly into a `display: flex`/`grid` container (or a marquee that clones or animates children). Each text node and `<a>` becomes a separate flex item, so the items reorder or wrap apart.
 - **How to verify:** Every `inline_richtext` output sits inside its own inline wrapper (`<span>`/`<p>`), never as the direct child of a flex or grid element. Runtime: add a link to the middle of the text in a marquee, card and heading.
-- **Fix pattern (Folio):** root cause was `xo-marquee[xo-direction=rtl]{direction:rtl}` (webcomponent CSS) inherited by an `inline-flex` phrase → its text node + `<a>` became flex items laid out right-to-left. Fix: `xo-marquee[xo-direction="rtl"] xo-marquee-item > * { direction: ltr }` (+ `[dir="rtl"]` counterpart) in `src/styles/base/content.scss`.
+- **Fix playbook:** `fixes/SF-RTE-03.md`
 
 ### SF-SETTINGS-01 — No demo resource handles in setting defaults
 - **Seen in:** R1 Folio
 - **Check:** static
 - **Requirement:** `url`, `product`, `collection`, `blog`, `page` and `link_list` settings must not default to store-specific handles (e.g. `/products/morning-oil`). Allowed: blank, `/collections/all`, `/`, or `shopify://` routes that exist on every store.
 - **How to verify:** Scan `schema.js` defaults and the shipped template/group JSON for `/products/…`, `/collections/<handle>`, `/blogs/…`, `/pages/…`, and `shopify://products|collections|blogs|pages/…`.
+- **Fix playbook:** `fixes/SF-SETTINGS-01.md`
 
 ### SF-LINK-01 — Actionable text looks clickable
 - **Seen in:** R1 Folio
 - **Check:** runtime
 - **Requirement:** Controls such as "remove all" (empty filter/search state) must have link or button affordance: underline, button style, or a hover state.
 - **How to verify:** Check the empty-state and clear-filter markup for a styled link or button class. Runtime: view the empty search state.
+- **Fix playbook:** `fixes/SF-LINK-01.md`
 
 ### SF-STOCK-01 — Untracked inventory is not "Out of stock"
 - **Seen in:** R1 Folio
 - **Check:** heuristic
 - **Requirement:** Inventory status must respect `variant.inventory_management` and `inventory_policy`. A variant with untracked inventory (`inventory_management` blank) or `continue` policy is purchasable and must not say "Out of stock".
 - **How to verify:** Any branch on `inventory_quantity <= 0` must first check `variant.available` / `inventory_management != blank`. The JS variant-change update must do the same.
+- **Fix playbook:** `fixes/SF-STOCK-01.md`
 
 ### SF-CONTRAST-01 — Modal close button has enough contrast
 - **Seen in:** R1 Folio
 - **Check:** runtime
 - **Requirement:** The modal/drawer close (×) control meets contrast (3:1 for non-text UI) against its background in every color scheme.
 - **How to verify:** Open quick view, the cart drawer, search, popups and the menu drawer in each color scheme and measure the icon colour against the background.
+- **Fix playbook:** `fixes/SF-CONTRAST-01.md`
 
 ### SF-VARIANT-01 — Swatch availability uses the current selection correctly
 - **Seen in:** R1 Folio
 - **Check:** runtime
 - **Requirement:** A swatch is struck through or disabled only when **no** available variant exists for that value combined with the *other currently selected* options. Reviewer case: with `Cat` and `M/L` selected, `Dog` was struck through although `Dog / S/M` was available. Do not mark it unavailable when only the exact current pair is missing. Prefer Shopify's `product_option_value.available` (option-value drops) over custom JS.
 - **How to verify:** Read the variant-picker availability logic (Liquid and JS). Runtime: on a product with 2+ options and sparse availability, click through combinations.
+- **Fix playbook:** `fixes/SF-VARIANT-01.md`
 
 ---
 

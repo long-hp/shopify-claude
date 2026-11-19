@@ -17,6 +17,11 @@ Verdicts:
 Usage:
   python3 scan-feedback.py [theme-root] [--only SF-A11Y-03,SF-ASSET-01] [--json] [--max N]
 
+Also reads ../feedback/R<n>-<date>-<theme>.md (every reviewer round, verbatim, each
+top-level bullet marked `→ SF-<ID>`): prints a per-round coverage table and flags any
+bullet that was never mapped to a ledger ID. Items with a ../fixes/<ID>.md playbook
+are marked in the summary table.
+
 Read-only. Never edits the theme.
 """
 from __future__ import annotations
@@ -260,7 +265,8 @@ def check_menu(t: Theme, n: int):
     if not hits:
         return report("SF-MENU-01", "FAIL", "No menu snippet loops 2+ nested levels of `.links`.")
     report("SF-MENU-01", "MANUAL",
-           "Nested levels are rendered. Verify mobile level-2/3 panels at 390px (full viewport, scroll, back/close).",
+           "Nested levels are rendered. Verify mobile level-2/3 panels at 390px (full viewport, scroll, back/close) "
+           "and TAP every level-2/3 leaf: it must navigate to its URL.",
            [t.rel(p) for p in hits])
 
 
@@ -528,7 +534,7 @@ def check_inline_links(t: Theme, n: int):
 
 
 DEMO_URL_RE = re.compile(
-    r"['\"](/(?:products|pages)/[\w-]+|/blogs/(?!news['\"/])[\w-]+|/collections/(?!all['\"/])[\w-]+|"
+    r"['\"](/(?:products|pages)/[\w-]+|/blogs/(?!news['\"])[\w-]+(?:/[\w/-]+)?|/collections/(?!all['\"/])[\w-]+|"
     r"shopify://(?:products|collections|blogs|pages)/[\w-]+)")
 
 
@@ -538,9 +544,14 @@ def check_demo_handles(t: Theme, n: int):
         if "node_modules" in str(schema):
             continue
         text = t.read(schema)
+        # Preset settings ship as the section's defaults when a merchant adds it, so a demo
+        # handle there is the same violation as a `default:` (R1 Folio: the Social video
+        # preset blocks carried `/products/...` links while the schema had no default).
+        pm = re.search(r"\bcreatePreset\s*\(|\bpresets\s*:", text)
+        preset_from = pm.start() if pm else len(text)
         for m in DEMO_URL_RE.finditer(text):
             line_start = text.rfind("\n", 0, m.start()) + 1
-            if re.search(r"\bdefault\s*:", text[line_start:m.start()]):
+            if re.search(r"\bdefault\s*:", text[line_start:m.start()]) or m.start() > preset_from:
                 fails.append((schema, line_of(text, m.start()), m.group(1)))
     for j in t.files(t.src, "*.json"):
         if "/locales/" in str(j):
@@ -549,9 +560,13 @@ def check_demo_handles(t: Theme, n: int):
         for m in DEMO_URL_RE.finditer(text):
             if m.group(1).startswith("/") and "collections/all" not in m.group(1):
                 warns.append((j, line_of(text, m.start()), m.group(1)))
-    v = "FAIL" if fails else ("WARN" if warns else "PASS")
-    ev = (["schema defaults (must be blank):"] + fmt(t, fails, n) if fails else []) + \
-         (["shipped template/group JSON (hard-coded store paths):"] + fmt(t, warns, n) if warns else [])
+    # A blank link must not fall back to `#` (a link that goes nowhere). The Theme Store
+    # packager strips `shopify://` references from templates, so blank is the shipped case.
+    hashes = grep(t, t.liquid, re.compile(r"href=\"\{\{[^}]*\|\s*default:\s*'#'"))
+    v = "FAIL" if fails else ("WARN" if warns or hashes else "PASS")
+    ev = (["schema defaults / preset settings (must be blank):"] + fmt(t, fails, n) if fails else []) + \
+         (["shipped template/group JSON (hard-coded store paths):"] + fmt(t, warns, n) if warns else []) + \
+         (["blank link falls back to '#' (render no <a> instead):"] + fmt(t, hashes, n) if hashes else [])
     report("SF-SETTINGS-01", v, "No store-specific handles in setting defaults.", ev)
 
 
@@ -568,6 +583,59 @@ def check_stock(t: Theme, n: int):
            "Untracked / continue-selling variants must not read 'Out of stock'.", fmt(t, hits, n))
 
 
+def check_tabs_default(t: Theme, n: int):
+    """SF-TABS-01: active tab taken from the URL without checking it matches a tab.
+
+    Bad:  assign current_handle = request.path | split: '/' | last
+          ... collections[current_handle]   (URL handle used unguarded)
+    Good: assign url_handle = request.path | split: '/' | last, and url_handle is
+          only promoted after `<x>.handle == url_handle` inside the block loop.
+    """
+    assign_rx = re.compile(r"assign\s+(\w+)\s*=\s*request\.path\b")
+    hits = []
+    for p in t.files(t.src / "sections", "*.liquid"):
+        text = t.clean(p)
+        for m in assign_rx.finditer(text):
+            var = m.group(1)
+            guarded = re.search(r"\.handle\s*==\s*" + var + r"\b", text)
+            used_raw = re.search(r"collections\[\s*" + var + r"\s*\]", text)
+            if used_raw or not guarded:
+                hits.append((p, line_of(text, m.start()),
+                             f"`{var}` comes from request.path and is used without matching it against a tab — "
+                             "fall back to the first tab when no tab matches"))
+    report("SF-TABS-01", "WARN" if hits else "PASS",
+           "Tabbed sections must default to the first tab on every page (incl. unrelated / empty collections).",
+           fmt(t, hits, n))
+
+
+def check_fixed_rows(t: Theme, n: int):
+    """SF-LAYOUT-01: grid tracks with a fixed height clip / overlap taller content.
+
+    Bad:  grid-auto-rows: calc(var(--xo-auto-row) * 1rem)   (a merchant "fixed row"
+          setting on a grid of product cards → rows 200px, cards 430px → overlap)
+    Good: grid-auto-rows: minmax(20rem, auto) — or no fixed track at all. A fixed
+          track is only fine for full-bleed image tiles whose content fits by design.
+    """
+    rows_rx = re.compile(r"grid-auto-rows\s*:\s*([^;]+);")
+    setting_rx = re.compile(r"id:\s*[\"'](fixed_row|auto_row|row_height)[\"']")
+    hits = []
+    for p in t.files(t.src, "*.scss"):
+        text = t.clean(p)
+        for m in rows_rx.finditer(text):
+            val = m.group(1)
+            if not re.search(r"minmax|(?<![\w-])auto(?![\w-])|min-content|max-content|fit-content|\dfr\b", val):
+                hits.append((p, line_of(text, m.start()),
+                             f"fixed grid row `{val.strip()}` — content taller than the track overlaps the next row/section"))
+    for p in t.files(t.src, "schema.js"):
+        text = t.clean(p)
+        for m in setting_rx.finditer(text):
+            hits.append((p, line_of(text, m.start()),
+                         f"merchant setting `{m.group(1)}` fixes the row height of a grid — cards can overflow it"))
+    report("SF-LAYOUT-01", "WARN" if hits else "PASS",
+           "Grid rows must grow with their content; also click every tab / filter / load-more at desktop + 390px.",
+           fmt(t, hits, n))
+
+
 def manual(sid: str, summary: str, hint_rx: str | None = None):
     def run(t: Theme, n: int):
         ev = []
@@ -581,6 +649,8 @@ CHECKS = [
     ("SF-FILTER-01", check_filter),
     ("SF-I18N-01", check_i18n),
     ("SF-MENU-01", check_menu),
+    ("SF-MENU-02", manual("SF-MENU-02", "Desktop dropdown: panel grows to the longest label; level 3 opens beside level 2 (left:100% on a relative level-2 li).",
+                          r"childlink\.links|grandchild")),
     ("SF-NEWSLETTER-01", check_newsletter),
     ("SF-PRODUCT-01", check_product_tax),
     ("SF-COLLECTION-01", check_unit_price),
@@ -595,6 +665,8 @@ CHECKS = [
     ("SF-A11Y-05", manual("SF-A11Y-05", "Measure pointer targets ≥24×24 at runtime (dots, swatches, ×, ±).")),
     ("SF-A11Y-06", manual("SF-A11Y-06", "Render h1–h6 side by side in every preset; each level must differ.")),
     ("SF-SECTION-01", check_section_limit),
+    ("SF-LAYOUT-01", check_fixed_rows),
+    ("SF-TABS-01", check_tabs_default),
     ("SF-RTE-02", check_list_align),
     ("SF-RTE-03", check_inline_links),
     ("SF-SETTINGS-01", check_demo_handles),
@@ -608,6 +680,47 @@ CHECKS = [
 ]
 
 ORDER = {"FAIL": 0, "WARN": 1, "MANUAL": 2, "PASS": 3}
+
+SKILL_DIR = Path(__file__).resolve().parent.parent
+ROUND_FILE_RE = re.compile(r"^R(\d+)-(\d{4}-\d{2}-\d{2})-([\w-]+)\.md$")
+ROUND_MARK_RE = re.compile(r"→\s*(SF-[A-Z0-9]+-\d+(?:\s*,\s*SF-[A-Z0-9]+-\d+)*)\s*$")
+
+
+def load_rounds() -> tuple[list[dict], list[str]]:
+    """Read every feedback/R<n>-<date>-<theme>.md. Each top-level bullet must end with
+    `→ SF-<ID>[, SF-<ID>]`. Returns (rounds, problems)."""
+    rounds, problems = [], []
+    known = {sid for sid, _ in CHECKS}
+    fdir = SKILL_DIR / "feedback"
+    if not fdir.is_dir():
+        return rounds, [f"{fdir} missing — no reviewer rounds recorded"]
+    for f in sorted(fdir.glob("R[0-9]*.md"), key=lambda p: int(ROUND_FILE_RE.match(p.name).group(1)) if ROUND_FILE_RE.match(p.name) else 0):
+        fm = ROUND_FILE_RE.match(f.name)
+        if not fm:
+            problems.append(f"feedback/{f.name}: name must be R<n>-<YYYY-MM-DD>-<theme>.md")
+            continue
+        ids, unmapped, bullets = [], [], 0
+        for i, line in enumerate(f.read_text(encoding="utf-8").splitlines(), 1):
+            if not line.startswith("- "):
+                continue
+            bullets += 1
+            m = ROUND_MARK_RE.search(line)
+            if not m:
+                unmapped.append(f"feedback/{f.name}:{i}  {line[2:70]}…")
+                continue
+            for sid in re.split(r"\s*,\s*", m.group(1)):
+                if sid not in known:
+                    problems.append(f"feedback/{f.name}:{i}  {sid} is not a ledger/scanner ID")
+                if sid not in ids:
+                    ids.append(sid)
+        problems += [f"not ingested (no → SF-ID): {u}" for u in unmapped]
+        rounds.append({"round": f"R{fm.group(1)}", "date": fm.group(2), "theme": fm.group(3),
+                       "file": f.name, "bullets": bullets, "unmapped": len(unmapped), "ids": ids})
+    return rounds, problems
+
+
+def has_playbook(sid: str) -> bool:
+    return (SKILL_DIR / "fixes" / f"{sid}.md").exists()
 
 
 def main() -> int:
@@ -632,26 +745,56 @@ def main() -> int:
         except Exception as e:  # a broken heuristic must not hide the other results
             report(sid, "MANUAL", f"scanner error: {e!r} — check by hand")
 
+    rounds, round_problems = load_rounds()
+    by_id = {r["id"]: r["verdict"] for r in RESULTS}
+    for r in RESULTS:
+        r["playbook"] = f"fixes/{r['id']}.md" if has_playbook(r["id"]) else None
+    for rd in rounds:
+        rd["verdicts"] = {sid: by_id.get(sid, "not run") for sid in rd["ids"]}
+
     if a.json:
-        print(json.dumps({"root": str(root), "results": RESULTS}, indent=2, ensure_ascii=False))
-        return 0
+        print(json.dumps({"root": str(root), "results": RESULTS, "rounds": rounds,
+                          "round_problems": round_problems}, indent=2, ensure_ascii=False))
+        return 1 if any(r["verdict"] == "FAIL" for r in RESULTS) or round_problems else 0
 
     counts = defaultdict(int)
     for r in RESULTS:
         counts[r["verdict"]] += 1
     print(f"# Theme Store pre-submit scan — {root.name}\n")
     print(" · ".join(f"{k} {counts[k]}" for k in ("FAIL", "WARN", "MANUAL", "PASS")) + "\n")
-    print("| ID | Verdict | Summary |\n|---|---|---|")
-    for r in sorted(RESULTS, key=lambda r: (ORDER[r["verdict"]], r["id"])):
-        print(f"| {r['id']} | {r['verdict']} | {r['summary']} |")
+    seen = defaultdict(list)
+    for rd in rounds:
+        for sid in rd["ids"]:
+            seen[sid].append(rd["round"])
+    print("| ID | Verdict | Rounds | Playbook | Summary |\n|---|---|---|---|---|")
+    for r in sorted(RESULTS, key=lambda r: (ORDER[r["verdict"]], -len(seen[r["id"]]), r["id"])):
+        print(f"| {r['id']} | {r['verdict']} | {' '.join(seen[r['id']]) or '—'} | "
+              f"{'yes' if r['playbook'] else '—'} | {r['summary']} |")
     print()
+
+    print(f"## Reviewer rounds — all re-checked on {root.name}\n")
+    if rounds:
+        print("Every round applies to every theme; *Raised on* is only where it came from.\n")
+        print("| Round | Raised on | Received | Bullets | Items | FAIL | WARN | MANUAL | PASS |\n|---|---|---|---|---|---|---|---|---|")
+        for rd in rounds:
+            c = defaultdict(int)
+            for v in rd["verdicts"].values():
+                c[v] += 1
+            print(f"| {rd['round']} | {rd['theme']} | {rd['date']} | {rd['bullets']} | {len(rd['ids'])} | "
+                  f"{c['FAIL']} | {c['WARN']} | {c['MANUAL']} | {c['PASS']} |")
+        print()
+    if round_problems:
+        print("**ROUNDS ✗ — fix before trusting this report (run INGEST):**")
+        for p_ in round_problems:
+            print(f"- {p_}")
+        print()
     for r in sorted(RESULTS, key=lambda r: (ORDER[r["verdict"]], r["id"])):
         if r["evidence"]:
             print(f"## {r['id']} — {r['verdict']}")
             for e in r["evidence"]:
                 print(f"- {e}")
             print()
-    return 1 if counts["FAIL"] else 0
+    return 1 if counts["FAIL"] or round_problems else 0
 
 
 if __name__ == "__main__":
