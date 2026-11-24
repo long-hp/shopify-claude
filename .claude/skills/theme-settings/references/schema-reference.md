@@ -65,7 +65,9 @@ Details:
   `<div id="shopify-section-…" class="shopify-section …">` and replaces the target's outerHTML. An option with
   `value: "default"` (or without `section`) re-inserts the original node; one is added automatically if missing.
   Inline `<script>`s in the new section run once; `src` scripts already on the page aren't reloaded. Fires
-  `shopify:section:unload` (old) / `shopify:section:load` (new, `detail.sectionId`). Responses are cached (memory +
+  `shopify:section:unload` (old) / `shopify:section:load` (new, `detail.sectionId`), then `xo:dom:load` on the new
+  section so xo-webcomponents (V1.9.29+) re-runs its per-DOM setup there (`[xo-measure]` vars, `xo-hover` levels,
+  anchors) — outside the theme editor the library ignores `shopify:section:load`. Responses are cached (memory +
   sessionStorage per `cache`) and prefetched on hover/focus. A failed request keeps the old section and shows the
   error under the field.
 - **select with `class`**: removes every class with that prefix on the target and adds exactly one
@@ -116,4 +118,7 @@ uncached load).
 - Two instances on one page share storage keys — keep one.
 - A cached header may show a stale cart count until `cache` expires; use `"cache": 0` if that matters.
 - Variant sections render with their file defaults; make those defaults look good.
-- Theme scripts gated by `Shopify.designMode` won't re-init swapped sections on the live store.
+- Theme scripts gated by `Shopify.designMode` won't re-init swapped sections on the live store — have them also listen
+  to `xo:dom:load` (a library event, safe on the live store) or call `window.xoGlobal.init(root)`. With an
+  xo-webcomponents bundle older than V1.9.29, `[xo-measure]` elements in a swapped header (menu dropdown, predictive
+  search panel) keep stale or missing `--xo-*` values.

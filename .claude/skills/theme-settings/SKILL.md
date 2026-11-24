@@ -120,7 +120,8 @@ Tell the user: files changed, how to show/hide the panel, which variant sections
 how to replace thumbnails with screenshots, and the behaviour rule (changes preview live; **Áp dụng/Apply** saves
 & closes; **Đặt lại/Reset** restores the original & keeps the drawer open; **X / Esc / button** resets & closes).
 Mention that theme scripts that only re-init on `shopify:section:load` inside `Shopify.designMode` won't re-init a
-swapped header on the live demo — the panel fires the event, but those scripts must not be gated by design mode.
+swapped header on the live demo — the panel also fires `xo:dom:load` on the new section; theme scripts should listen to
+it (xo-webcomponents V1.9.29+ already does, re-running `[xo-measure]` / `xo-hover` setup inside the new section).
 
 ## References
 

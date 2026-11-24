@@ -82,5 +82,12 @@ grep -rln "shopify:section:load" src | head
 grep -rn "designMode" $(grep -rln "shopify:section:load" src) | head
 ```
 
-The panel fires `shopify:section:unload` / `shopify:section:load` after swapping. Scripts that only listen inside
-`if (Shopify.designMode)` won't re-init the new header on the live demo — list them in the hand-off.
+The panel fires `shopify:section:unload` / `shopify:section:load`, then `xo:dom:load`, after swapping. Scripts that
+only listen inside `if (Shopify.designMode)` won't re-init the new header on the live demo — list them in the hand-off
+and suggest adding an `xo:dom:load` listener (re-init within `event.target`). Also check the theme's
+`xo-webcomponents.min.js` version (`console.info('WC V…')`): V1.9.29+ re-runs `[xo-measure]` / `xo-hover` setup on
+`xo:dom:load` and re-measures `[xo-measure]` on resize; older bundles leave a swapped header's measured menus wrong.
+
+```bash
+grep -rln "xo-measure" src | head            # elements that need the library re-run after a swap
+```

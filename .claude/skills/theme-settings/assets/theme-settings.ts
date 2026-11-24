@@ -41,7 +41,8 @@
  * section-swap: mỗi bản thay là 1 file section riêng ( ví dụ dựng trong khu "showcase" của theme ), ghi section_id của nó
  * vào lựa chọn; render bằng setting mặc định của file section đó. Tải `<path hiện tại>?section_id=<section>`, thay
  * outerHTML của section đích bằng thẻ <div id="shopify-section-…" class="shopify-section"> trả về, chạy lại <script>
- * bên trong, bắn shopify:section:unload ( section cũ ) / shopify:section:load ( section mới ) { sectionId } như theme editor.
+ * bên trong, bắn shopify:section:unload ( section cũ ) / shopify:section:load ( section mới ) { sectionId } như theme editor,
+ * rồi xo:dom:load lên section mới để global.ts của thư viện chạy lại trong đó ( xo-measure, hover level… ).
  * "Mặc định" ( value "default" ) gắn lại đúng phần tử gốc. Phản hồi được cache ( bộ nhớ + sessionStorage ), tải trước khi
  * rê / focus vào lựa chọn.
  *
@@ -1076,6 +1077,9 @@ export class ThemeSettings extends XoComponent<Props> {
     if (reapply) this.applyLocal();
     if (fresh) this.runScripts(next);
     fire(next, 'shopify:section:load');
+    // Cho global.ts của thư viện chạy lại trong section mới ( xo-measure, hover level, anchor… ): ngoài theme editor
+    // global.ts không nghe shopify:section:load
+    fire(next, 'xo:dom:load');
     if (reapply) this.refresh();
   }
 
