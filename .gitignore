@@ -28,3 +28,5 @@ __pycache__/
 
 # Lighthouse audit reports (lighthouse-audit skill throwaway output)
 .lighthouse/
+# skill-creator eval workspaces
+.workspaces/

@@ -21,11 +21,11 @@ The `.claude/` agent sits in the middle: it reads the design, writes Liquid, val
 | Layer | Location | Role |
 |-------|----------|------|
 | **Project memory** | `.agent-state/` | Three markdown files: `PLAN.md` (priority queue ⚪🔵✅⏸❓), `PROGRESS.md` (append-only changelog, one entry per session), `INVENTORY.md` (coverage map, auto-generated). |
-| **Skill catalog** | `.claude/skills/<name>/` | 19 specialised skills — each is a folder with `SKILL.md` + `references/*.md` + `scripts/` if needed. |
+| **Skill catalog** | `.claude/skills/<name>/` | 20 specialised skills — each is a folder with `SKILL.md` + `references/*.md` + `scripts/` if needed. |
 | **External integrations** | `.mcp.json` | 3 MCP servers (`xo-components`, `playwright`, `xo-design`) + `context7` for docs lookup. |
 | **Guardrails** | `.claude/hooks/` + `settings.json` | `skill-reminder.cjs` — a `PreToolUse` hook that nudges the right skill by file path on every Edit/Write; `settings.json` pins the model, the skill plugins, and registers the hook. |
 
-### The 19 skills
+### The 20 skills
 
 | Skill | Answers | Triggered when |
 |-------|---------|----------------|
@@ -36,6 +36,7 @@ The `.claude/` agent sits in the middle: it reads the design, writes Liquid, val
 | `polish` | Finishing-pass QA — a11y · `xo-animate` reveal · `xo-hover` | `/polish <target>`, or design-to-liquid's completion handoff |
 | `editor-qa` | Live Theme Editor QA — add section/blocks, set fields, desktop↔mobile, screenshot | `/editor-qa <target>`, "test trên editor" |
 | `lighthouse-audit` | Lighthouse scores (Perf/A11y/BP/SEO) + Core Web Vitals against a storefront URL | `/lighthouse-audit <url>` — run manually once the theme is done |
+| `stylesheet-scope` | Lighter theme CSS for PageSpeed — per-component `{% stylesheet %}` via the `xo-stylesheet` Vite plugin, one `<head>` request per page, AJAX content kept shared | `/stylesheet-scope`, "tối ưu css", "render-blocking css", "unused css", `lighthouse-audit` handoff |
 | `liquid` | Liquid language reference — tags, filters, objects, idioms, gotchas | Authoring/debugging any `.liquid` file |
 | `snippet` | How to author the `.liquid` body of a snippet | Creating/editing a snippet |
 | `schema` | How to write `schema.js` (section / block / global) | Creating/editing a schema |

@@ -1,0 +1,16 @@
+{
+  "$comment": "xo-stylesheet.vite-plugin.js — which *.global.scss files go into the {% stylesheet %} tag of their own liquid (Shopify bundles per page render tree) and which stay in the shared CSS file. Paths are relative to the theme root. exclude: HTML that arrives via AJAX (quick view, Section Rendering API, predictive search) is not in the initial render tree, so its CSS MUST stay shared. cssStyle: \"expanded\" (default, readable CSS inside the liquid) or \"compressed\".",
+  "include": [
+    "src/sections/**",
+    "src/pages/**",
+    "src/groups/**",
+    "src/blocks/**",
+    "src/snippets/**"
+  ],
+  "exclude": [],
+  "targets": {},
+  "abstractsDir": "../../html/basehtml/src/styles/abstracts",
+  "sharedFile": "src/styles/global.shared.scss",
+  "themeRoot": "shopify",
+  "cssStyle": "expanded"
+}

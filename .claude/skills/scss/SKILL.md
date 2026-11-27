@@ -62,6 +62,7 @@ BaseHTML SCSS framework: mixins, functions, and layout components for theme-spec
 - **`xo-container` / `xo-grid-block` grid layout** → `references/layout.md`
 - **BEM naming conventions** → `references/bem.md`
 - **Hitting an error or stuck** → `references/troubleshooting.md`
+- **Where this CSS ends up on the storefront** (one `styles.css` vs per-component `{% stylesheet %}`, AJAX-loaded content) → `Skill(stylesheet-scope)`
 
 ## SCSS vs XO-CSS — When to use which
 

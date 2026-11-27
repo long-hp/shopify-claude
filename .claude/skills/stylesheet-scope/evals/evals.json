@@ -1,0 +1,63 @@
+{
+  "skill_name": "stylesheet-scope",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Theme Shopify ở thư mục này (XO base theme, build bằng vite) đang nối toàn bộ scss của mọi section vào một file styles.css rất nặng, PageSpeed mobile thấp vì CSS chặn render. Tối ưu CSS cho theme này giúp tôi. Lưu ý: trước đây tôi đã thử tách CSS theo từng section kiểu Dawn (stylesheet_tag trong section) và điểm còn thấp hơn, nên đừng làm lại cách đó. Chỉ sửa trong thư mục theme này, không cần push lên store. Cuối cùng viết REPORT.md ở root theme: đã làm gì, số liệu trước/sau, còn gì cần kiểm tra trên store.",
+      "expected_output": "Installs the xo-stylesheet Vite plugin (plugin file at root, CLI in scripts/, config in theme-config/), patches vite.config.js and main.scss (global.shared.scss), moves CSS links above content_for_header in theme.liquid, injects {% stylesheet %} blocks into shopify/sections + shopify/snippets, keeps AJAX-loaded content (quick view, predictive search, recommendations) in the shared file via exclude, reports before/after sizes, and explicitly rejects the per-section stylesheet_tag approach with the RTT reasoning.",
+      "files": [],
+      "expectations": [
+        "plugin-installed: xo-stylesheet.vite-plugin.js exists at the theme root and vite.config.js registers xoStylesheetPlugin() in plugins after xoCssPlugin()",
+        "main-imports-shared: src/styles/main.scss imports ./global.shared.scss (not ./global.scss)",
+        "config-has-ajax-excludes: theme-config/stylesheet.config.json exists and its exclude list keeps quick-view content shared (the quick-view snippet or the product-info snippets it renders) and the predictive-search snippets",
+        "blocks-injected: at least 80 liquid files under shopify/sections + shopify/snippets contain a {% stylesheet %} block",
+        "no-dawn-split: the number of `| stylesheet_tag` links under src/ is no higher than in the pristine theme (9); the three leftover per-section links (announcement-bar, quick-view, line) were converted to .global.scss, so 6 or fewer remain",
+        "css-links-above-header: in src/layout/theme.liquid both the xo-webcomponents.min.css link and the vite-tag styles/main.scss render appear before {{ content_for_header }}",
+        "idempotent-check-clean: `node scripts/xo-stylesheet.mjs --check` run in the theme exits 0",
+        "excluded-have-no-block: no liquid under shopify/ whose scss is in the exclude list still carries a {% stylesheet %} block",
+        "shared-css-under-35kb-gzip: the built shopify/assets/styles.css (after `npx vite build`) is at most 35 KB gzip, down from ~59 KB",
+        "css-expanded-not-minified: injected {% stylesheet %} blocks are readable (multi-line, indented), not one-line minified CSS",
+        "report-before-after: REPORT.md states styles.css size before and after (gzip or raw) with a clear reduction",
+        "report-rejects-dawn-with-reason: REPORT.md explains why per-section stylesheet_tag links were not used (late discovery in body / extra RTT per request / Lighthouse throttling), not just that the user said so",
+        "report-runtime-checks-no-score-claim: REPORT.md lists what still must be verified on the store (quick view, predictive search, cart drawer or theme editor) and does not claim a measured Lighthouse score it did not run"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Vừa chạy Lighthouse mobile cho trang home của theme này (thư mục hiện tại): Performance 58. Hai audit đỏ nhất là 'Eliminate render-blocking resources' và 'Reduce unused CSS', đều trỏ vào assets/styles.css (~60 KB gzip, ~90% unused trên home). Xử lý phần CSS đó đi. Ghi lại REPORT.md ở root theme.",
+      "expected_output": "Recognises the audits as theme-CSS-owned, measures composition first, installs the plugin and config, decides exclusions for AJAX-loaded sections, runs injection + build, shows before/after bytes, and hands Lighthouse re-measurement off with the 5-run FCP/LCP protocol rather than claiming a score.",
+      "files": [],
+      "expectations": [
+        "plugin-installed: xo-stylesheet.vite-plugin.js exists at the theme root and vite.config.js registers xoStylesheetPlugin() in plugins after xoCssPlugin()",
+        "main-imports-shared: src/styles/main.scss imports ./global.shared.scss (not ./global.scss)",
+        "config-has-ajax-excludes: theme-config/stylesheet.config.json exists and its exclude list keeps quick-view content shared (the quick-view snippet or the product-info snippets it renders) and the predictive-search snippets",
+        "blocks-injected: at least 80 liquid files under shopify/sections + shopify/snippets contain a {% stylesheet %} block",
+        "no-dawn-split: the number of `| stylesheet_tag` links under src/ is no higher than in the pristine theme (9); the three leftover per-section links (announcement-bar, quick-view, line) were converted to .global.scss, so 6 or fewer remain",
+        "css-links-above-header: in src/layout/theme.liquid both the xo-webcomponents.min.css link and the vite-tag styles/main.scss render appear before {{ content_for_header }}",
+        "idempotent-check-clean: `node scripts/xo-stylesheet.mjs --check` run in the theme exits 0",
+        "excluded-have-no-block: no liquid under shopify/ whose scss is in the exclude list still carries a {% stylesheet %} block",
+        "shared-css-under-35kb-gzip: the built shopify/assets/styles.css (after `npx vite build`) is at most 35 KB gzip, down from ~59 KB",
+        "css-expanded-not-minified: injected {% stylesheet %} blocks are readable (multi-line, indented), not one-line minified CSS",
+        "report-measured-composition: REPORT.md includes a measured composition of styles.css before the change (bytes by group or top files) rather than only the numbers quoted by the user",
+        "report-handoff-protocol: REPORT.md hands Lighthouse re-measurement off (lighthouse-audit or an equivalent explicit step) with a multi-run mobile FCP/LCP comparison and does not invent a new Performance score",
+        "report-rejects-dawn-with-reason: REPORT.md explains why per-section stylesheet_tag links are not the fix (late discovery / RTT), or at least does not introduce them"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Theme này đã cài xo-stylesheet (theme-config/stylesheet.config.json có sẵn). Tôi vừa thêm snippet size-guide (src/snippets/size-guide/) — nút bấm mở popup, nội dung popup được fetch từ /pages/size-guide?section_id=size-guide-content (section src/pages/page/size-guide-content/). Trên store, mở popup lên thì bảng size không có style gì cả, mặc dù scss của nó có trong src. Tìm nguyên nhân và sửa trong repo. Ghi lại REPORT.md ở root theme.",
+      "expected_output": "Explains that HTML fetched via ?section_id= is not in the initial render tree so its {% stylesheet %} CSS is not shipped; adds src/pages/page/size-guide-content (and size-guide snippet if its markup is inside the fetched HTML) to exclude in stylesheet.config.json, re-runs node scripts/xo-stylesheet.mjs, verifies the CSS is now in global.shared.scss and the block is gone from the section liquid; does not re-install the plugin or touch unrelated files.",
+      "files": [],
+      "expectations": [
+        "exclude-added: theme-config/stylesheet.config.json exclude now covers src/pages/page/size-guide-content (folder path or its .global.scss)",
+        "block-removed: shopify/sections/size-guide-content.liquid no longer contains a {% stylesheet %} block",
+        "button-keeps-block: shopify/snippets/size-guide.liquid (the button, in the initial render tree) still contains its {% stylesheet %} block",
+        "shared-has-size-guide: src/styles/global.shared.scss imports size-guide-content.global.scss and the built styles.css contains the .xo-size-guide-content rules",
+        "report-explains-render-tree: REPORT.md explains the cause: HTML fetched with ?section_id= is not in the page's initial render tree, so Shopify never ships that section's {% stylesheet %} CSS",
+        "no-reinstall-no-collateral: vite.config.js, src/styles/main.scss and xo-stylesheet.vite-plugin.js are unchanged, no stylesheet_tag link was added, and CHANGED_FILES.txt lists only the config, the generated shared scss, the size-guide liquids under shopify/, .gitignore and REPORT.md",
+        "idempotent-check-clean: `node scripts/xo-stylesheet.mjs --check` run in the theme exits 0 after the fix",
+        "scss-untouched: the size-guide .global.scss files were not moved into another scss file or into {% style %} by hand"
+      ]
+    }
+  ]
+}

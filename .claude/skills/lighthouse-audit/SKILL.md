@@ -74,6 +74,7 @@ Produce a compact digest. Lead with the verdict so status is visible first.
 
 ## Handoff
 **→ polish** (static markup a11y): …
+**→ stylesheet-scope** (theme CSS: render-blocking / unused): …
 **→ design-to-liquid** (image/markup perf): …
 **Flag only — app/platform (not theme-owned):** …
 **Flag only — SEO / Best-Practices (reference):** …
@@ -82,7 +83,7 @@ Produce a compact digest. Lead with the verdict so status is visible first.
 State **PASS/FAIL per category per form-factor** — a theme can pass desktop and fail mobile. Route every failing audit via `references/handoff.md`:
 
 - **Accessibility** audits → **`polish`** (mark `color-contrast` and other rendered-only items as "runtime-detected" so polish verifies against the live render).
-- **Performance** audits on **theme-owned** resources (oversized/unsized images, render-blocking theme CSS/JS, lazy-loaded LCP, high CLS) → **`design-to-liquid`**.
+- **Performance** audits on **theme CSS** (`render-blocking-resources` / `unused-css-rules` on `styles.css`) → **`stylesheet-scope`**. Other theme-owned resources (oversized/unsized images, render-blocking theme JS, lazy-loaded LCP, high CLS) → **`design-to-liquid`**.
 - **Performance** audits on **third-party/app/Shopify-injected** resources → **flag only, "not theme-owned"**. Apps routinely depress the Performance score on a perfectly good theme — split these out so the user isn't chasing a non-theme problem (`references/thresholds.md` → Shopify caveat).
 - **Best Practices / SEO** → flag with the Lighthouse/shopify.dev reference; route to `design-to-liquid` only if it traces to theme template/markup.
 

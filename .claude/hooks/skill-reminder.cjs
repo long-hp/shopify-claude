@@ -152,6 +152,7 @@ function matchReminders(filePath, content = '') {
         'BEM naming: `.xo-block`, `.xo-block__element`, `.xo-block--modifier`.',
         'Tier-3 styles (hover chains, keyframes, pseudo-elements, complex selectors) ALWAYS land in SCSS regardless of project CSS strategy.',
         'Atomic-eligible styles (layout, spacing, typography, simple state) — check clarify-protocol Q7 answer for this section: if "XO-CSS-first", lift atomic styles to liquid classes; SCSS file should only carry tier-3. Atomic body-size = direct rem (e.g. `fz:1.4rem`), NOT a SCSS `fz(body, N)` call moved to sidecar.',
+        'If `theme-config/stylesheet.config.json` exists (stylesheet-scope installed), this file is compiled ALONE into the `{% stylesheet %}` tag of its own liquid: scope every selector under the component class, never rely on another file\'s CSS, and if this component\'s HTML arrives via AJAX (quick view, section rendering API) add its folder to `exclude` — see `Skill(stylesheet-scope)`.',
       ],
       action: 'Invoke `Skill(scss)` before authoring.',
     });
