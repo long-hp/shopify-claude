@@ -1,0 +1,54 @@
+{
+  "skill_name": "motion",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Thêm hiệu ứng cho section image-with-text: tiêu đề tách chữ trồi lên, ảnh hover kiểu goo sang ảnh thứ hai (merchant chọn ảnh thứ hai trong settings), tôn trọng reduced motion.",
+      "expected_output": "Uses xo-motion (not xo-animate): section prelude with motion_tag bridging settings.animate_disabled; heading with text-rise / text-rise-words on an inline_richtext heading; image frame as an xo-trigger=\"hover\" host with xo-motion-gl=\"goo\" over two image_tag outputs carrying crossorigin: 'anonymous', the second inside {% if section.settings.image_2 %} with a one-image fallback; GL not on the first-section LCP image; notes reduced motion (end state, no canvas, CSS crossfade fallback) and touch (hover is a bonus); mentions xo-motion-gl.lazy.min.js asset; runs validate-liquid.py.",
+      "files": [],
+      "assertions": [
+        "Uses xo-motion for the new motion",
+        "Adds no new xo-animate / xo-parallax markup",
+        "Heading is split text rising (text-rise* or xo-split)",
+        "Image hover uses in-frame GL goo on a hover host",
+        "Hover host uses xo-trigger=\"hover\"",
+        "GL images carry crossorigin anonymous",
+        "Second image is a merchant setting (image_picker)",
+        "Reduced motion is handled or documented",
+        "Mentions the motion-gl lazy chunk asset"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Build a pinned horizontal lookbook section where cards flare at the edges like liquid while scrolling (smear), merchant picks images in blocks.",
+      "expected_output": "A tall xo-motion xo-scrub room (xo-start=\"top top\" xo-end=\"bottom bottom\") with a sticky 100svh stage, an overflow-x: clip frame and a row translated by a measured expression; each block card is frameless (capsule / rounded radius) with xo-motion-gl=\"smear\" and options { strength: 'speed', frame: '<clip selector>', lens: ~0.02-0.05 }; images via image_tag with crossorigin: 'anonymous' and no loading=lazy; {{ block.shopify_attributes }} on each card; room height scales with block count; text below the card or faded before the rim; static fallback under prefers-reduced-motion and html[xo-animate-disabled]; schema caps max_blocks; mentions the motion-gl lazy chunk and verification (validate-schema/validate-liquid, browser, editor-qa).",
+      "files": [],
+      "assertions": [
+        "Pinned scrub room (xo-scrub)",
+        "Sticky stage",
+        "Cards use xo-motion-gl smear",
+        "Smear strength from speed",
+        "Blocks loop with block.shopify_attributes",
+        "GL images carry crossorigin anonymous",
+        "Reduced-motion static fallback",
+        "Schema caps blocks (max_blocks)",
+        "Adds no new xo-parallax / xo-animate markup"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Section testimonials carousel: thẻ giữa to dần khi kéo, chữ quote trồi lên khi slide active. Có autoplay.",
+      "expected_output": "xo-carousel with xo-position-vars, xo-per-view=\"1\", xo-overflow=\"visible\", xo-loop and xo-carousel-trigger cards; CSS centre-big recipe driven by --xo-slide-offset (cards built at the big size, transform scale + translateX keeping gaps equal, pre-init fallback for the first slide); per-slide <xo-motion xo-trigger=\"parent\"> with text-rise-lines on the quote (copy visibility tied to the centre card); visible keyboard-reachable pause button using the existing sections.slideshow.pause_slideshow / play_slideshow translations (WCAG 2.2.2), noting carousel autoplay already stops under reduced motion; notes xo-carousel-trigger needs xo-extras.lazy.min.js and a V1.9.29 bundle; motion_tag bridge for the global animation switch.",
+      "files": [],
+      "assertions": [
+        "Carousel uses xo-position-vars",
+        "Size driven by --xo-slide-offset",
+        "Quote animates with xo-trigger=\"parent\"",
+        "Quote rises (text-rise* / y)",
+        "Autoplay configured",
+        "Visible pause control for autoplay",
+        "Adds no new xo-animate markup"
+      ]
+    }
+  ]
+}

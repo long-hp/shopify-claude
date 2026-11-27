@@ -1,5 +1,7 @@
 # `xo-animate` — one-shot scroll-reveal
 
+> **Legacy.** Use this reference to maintain sections that already use it. New motion uses `xo-motion` (`xo-motion.md`); conversions in `motion-migration.md`.
+
 Element enters the viewport → animates in once → settles at the final state. Most "fade up / slide in / zoom in on scroll" patterns, plus cascading staggers across siblings.
 
 **NOT for:** continuous scroll-linked motion (→ `xo-parallax-scroll`), looping animation (→ CSS `@keyframes`), mouse-tracking (→ `xo-parallax-hover`).
@@ -30,6 +32,7 @@ Element enters the viewport → animates in once → settles at the final state.
 | `xo-duration` | number | `500` | Duration (ms) |
 | `xo-order` | number | `0` | Stagger index (`delay = order * xo-constant`). Not needed with `xo-cascade`. |
 | `xo-constant` | number | `75` | Stagger step (ms) |
+| `xo-delay` | number | `0` | Extra ms before playing, added to `order * xo-constant` |
 | `xo-strength` | number | `1` | Intensity multiplier for directional/rotate types |
 | `xo-cascade` | boolean | `false` | Auto-stagger across siblings |
 | `xo-easing` | string | `easeLight` | Named easing (see list below) |
@@ -46,7 +49,7 @@ Element enters the viewport → animates in once → settles at the final state.
 ## Behaviour notes
 
 - Plays **once**, doesn't reverse on scroll-back (one-shot).
-- Auto-disables on `prefers-reduced-motion` / mobile-reduced-motion devices.
+- Disabled (shown immediately) only by `xo-disabled`, `xo-type="none"`, `<html xo-animate-disabled>` (written by `theme.liquid` from Theme settings → Animation → "Animate disabled") or the OS reduced-motion setting. Bare `<xo-animate>` reads its default `xo-type` / `xo-duration` / `xo-strength` from the same theme settings (`window.settings`).
 - Inside `<xo-carousel>` / `<xo-modal>` / `<xo-popover>` / `<xo-tabs-pane>` it plays when the parent becomes visible, not on scroll.
 - Sets a `xo-visible` attribute when complete — useful for chaining reveals via `xo-visible-binding="<selector>"`.
 

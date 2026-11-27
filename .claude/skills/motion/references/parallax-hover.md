@@ -1,5 +1,7 @@
 # `xo-parallax-hover` — mouse-tracking movement
 
+> **Legacy.** Use this reference to maintain sections that already use it. New motion uses `xo-motion` (`xo-motion.md`); conversions in `motion-migration.md`.
+
 Element follows the mouse position within its `<xo-parallax>` container — floating product images, 3D tilt cards, magnetic hover.
 
 **NOT for:** scroll-linked motion (→ `xo-parallax-scroll`), one-shot reveal (→ `xo-animate`), simple hover state (→ CSS `:hover`).

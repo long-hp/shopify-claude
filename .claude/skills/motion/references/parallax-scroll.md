@@ -1,5 +1,7 @@
 # `xo-parallax-scroll` — continuous scroll-linked keyframes
 
+> **Legacy.** Use this reference to maintain sections that already use it. New motion uses `xo-motion` (`xo-motion.md`); conversions in `motion-migration.md`.
+
 Element transform/opacity changes **continuously** as the page scrolls past it — hero backdrops moving slower than foreground, layered editorial parallax, scale/rotate-through-scroll, cinema-style reveals where the user controls playback by scrolling.
 
 **NOT for:** one-shot reveal on enter (→ `xo-animate`), mouse-tracking (→ `xo-parallax-hover`), simple hover transform (→ CSS `:hover`).
